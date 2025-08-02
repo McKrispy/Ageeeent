@@ -3,6 +3,7 @@
 此文件定义了与大型语言模型 (LLM) API 交互的接口。
 它提供了一个抽象基类，用于统一不同 LLM 提供商（如 OpenAI, Google Cloud）的调用方式。
 """
+import os
 from abc import ABC, abstractmethod
 
 class LLMAPIInterface(ABC):
@@ -30,6 +31,14 @@ class OpenAIInterface(LLMAPIInterface):
     """
     与 OpenAI API 交互的具体实现。
     """
+    def __init__(self):
+        """
+        初始化OpenAI接口，从环境变量获取API密钥
+        """
+        self.api_key = os.getenv('OPENAI_API_KEY')
+        if not self.api_key:
+            raise ValueError("OPENAI_API_KEY environment variable is required")
+    
     def get_completion(self, prompt: str, model: str = "gpt-4", **kwargs) -> str:
         """
         使用 OpenAI API 获取文本补全。
@@ -37,13 +46,24 @@ class OpenAIInterface(LLMAPIInterface):
         具体的实现将在这里编写，包括初始化客户端、发送请求和处理响应。
         """
         # 实际实现将在这里
-        print(f"Connecting to OpenAI with model {model}...")
+        print(f"Connecting to OpenAI with model {model} using API key: {self.api_key[:10]}...")
         pass
 
 class GoogleCloudInterface(LLMAPIInterface):
     """
     与 Google Cloud (e.g., Vertex AI) API 交互的具体实现。
     """
+    def __init__(self):
+        """
+        初始化Google Cloud接口，从环境变量获取API密钥
+        """
+        self.api_key = os.getenv('GOOGLE_CLOUD_API_KEY')
+        self.project_id = os.getenv('GOOGLE_CLOUD_PROJECT_ID')
+        if not self.api_key:
+            raise ValueError("GOOGLE_CLOUD_API_KEY environment variable is required")
+        if not self.project_id:
+            raise ValueError("GOOGLE_CLOUD_PROJECT_ID environment variable is required")
+    
     def get_completion(self, prompt: str, model: str = "gemini-pro", **kwargs) -> str:
         """
         使用 Google Cloud API 获取文本补全。
@@ -51,5 +71,5 @@ class GoogleCloudInterface(LLMAPIInterface):
         具体的实现将在这里编写，包括认证、发送请求和处理响应。
         """
         # 实际实现将在这里
-        print(f"Connecting to Google Cloud with model {model}...")
+        print(f"Connecting to Google Cloud with model {model} using API key: {self.api_key[:10]}...")
         pass
