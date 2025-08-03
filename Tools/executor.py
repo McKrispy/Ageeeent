@@ -3,15 +3,18 @@
 此文件定义了 Executor (执行器) 类。
 执行器是连接规划和行动的桥梁，负责调用工具、协调数据流，
 并严格遵守“原始数据存入RedisJSON，摘要存入MCP”的核心原则。
+执行器类，负责调用工具并协调与数据库的交互。
 """
 from Data.mcp_models import MCP
 from Interfaces.database_interface import DatabaseInterface
 from Entities.llm_entities import LLMFilterSummary
 from .available_tools import ToolRegistry
+import hashlib
+import json
 
-class Executor:
+class ToolExecutor:
     """
-    执行器类 - 执行命令，并作为 MCP 和 RedisJSON 之间的核心协调者。
+    执行器类，执行MCP中指定的命令。
     """
     def __init__(self, db_interface: DatabaseInterface, summarizer: LLMFilterSummary):
         """

@@ -32,7 +32,7 @@ class MCP(BaseModel):
     current_strategy_plan: List[str] = Field(default_factory=list, description="战略规划器输出的宏观步骤列表。")
     current_subgoal: str = Field(default="", description="任务规划器当前正在处理的具体子目标。")
     executable_command: Dict[str, Any] = Field(default_factory=dict, description="由任务规划器生成的、可直接执行的标准化命令。")
-    expected_data_schema: Dict[str, Any] = Field(default_factory=dict, description="对当前子目标预期结果的数据规范，用于后续验证。")
+    expected_data: Dict[str, Any] = Field(default_factory=dict, description="对当前子目标预期结果的数据规范，用于后续验证。")
 
     # Execute 阶段的产出
     working_memory: Dict[str, Any] = Field(default_factory=dict, description="一个临时的“便签”，存放当前步骤产生的摘要和数据指针(RedisJSON Keys)。")

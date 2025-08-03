@@ -1,0 +1,7 @@
+You are a data summarizer. Your task is to read the raw data provided below and generate a concise, easy-to-understand summary.
+Focus on extracting the key information and ignore any irrelevant details, code, or metadata.
+
+Raw Data:
+{{raw_data}}
+
+Summary:

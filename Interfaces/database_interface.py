@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-此文件定义了与 RedisJSON 数据库交互的接口。
-这个数据库作为“中央知识档案库”，用于存储所有由工具返回的、体积庞大的原始数据。
+此文件定义了与 RedisJSON 数据库交互的接口和具体实现。
 """
+import os
+import redis
+import json
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
@@ -11,19 +13,14 @@ class DatabaseInterface(ABC):
     一个抽象基类，定义了与数据库交互的标准方法。
     这里特指用于存储和检索“重型”数据的 RedisJSON 数据库。
     """
-
     @abstractmethod
     def connect(self):
-        """
-        建立与数据库的连接。
-        """
+        """建立与数据库的连接。"""
         pass
 
     @abstractmethod
     def disconnect(self):
-        """
-        断开与数据库的连接。
-        """
+        """断开与数据库的连接。"""
         pass
 
     @abstractmethod
@@ -57,34 +54,62 @@ class RedisJSONInterface(DatabaseInterface):
     """
     与 RedisJSON 数据库交互的具体实现。
     """
+    def __init__(self):
+        """
+        从环境变量初始化Redis连接参数。
+        """
+        self.host = os.getenv('REDIS_HOST', 'localhost')
+        self.port = int(os.getenv('REDIS_PORT', 6379))
+        self.db = int(os.getenv('REDIS_DB', 0))
+        self.client = None
+
     def connect(self):
         """
-        实现与 Redis 服务器的连接逻辑。
+        使用 redis-py 客户端建立与 Redis 服务器的连接。
         """
-        # 实际实现将在这里
-        print("Connecting to RedisJSON database...")
-        pass
+        try:
+            print(f"Connecting to RedisJSON database at {self.host}:{self.port}...")
+            self.client = redis.Redis(host=self.host, port=self.port, db=self.db, decode_responses=True)
+            # 验证连接和 ReJSON 模块可用性
+            self.client.ping()
+            self.client.json().set("connection_test", "$", {"status": "ok"})
+            print("Successfully connected to RedisJSON.")
+        except redis.exceptions.ConnectionError as e:
+            print(f"Error connecting to Redis: {e}")
+            raise
 
     def disconnect(self):
         """
-        实现与 Redis 服务器的断开逻辑。
+        断开与 Redis 服务器的连接。
         """
-        # 实际实现将在这里
-        print("Disconnecting from RedisJSON database...")
-        pass
+        if self.client:
+            print("Disconnecting from RedisJSON database...")
+            self.client.close()
 
     def store_data(self, key: str, data: Any) -> str:
         """
         使用 redis-py 库的 `json.set` 命令将数据存入 RedisJSON。
         """
-        # 实际实现将在这里
-        print(f"Storing data with key: {key} in RedisJSON.")
-        return key
+        if not self.client:
+            raise ConnectionError("Database is not connected. Call connect() first.")
+        try:
+            self.client.json().set(key, "$", data)
+            print(f"Successfully stored data with key: {key} in RedisJSON.")
+            return key
+        except Exception as e:
+            print(f"Error storing data in RedisJSON: {e}")
+            raise
 
     def retrieve_data(self, key: str) -> Any:
         """
         使用 redis-py 库的 `json.get` 命令从 RedisJSON 检索数据。
         """
-        # 实际实现将在这里
-        print(f"Retrieving data with key: {key} from RedisJSON.")
-        return {"data": "some large data"}
+        if not self.client:
+            raise ConnectionError("Database is not connected. Call connect() first.")
+        try:
+            data = self.client.json().get(key)
+            print(f"Successfully retrieved data with key: {key} from RedisJSON.")
+            return data
+        except Exception as e:
+            print(f"Error retrieving data from RedisJSON: {e}")
+            return None
