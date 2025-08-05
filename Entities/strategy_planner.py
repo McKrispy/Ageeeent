@@ -14,6 +14,8 @@ class LLMStrategyPlanner(BaseLLMEntity):
         """
         读取用户需求和长期战略记忆，生成宏观战略计划并更新到 MCP.current_strategy_plan。
         """
+        self._update_status(mcp, 1) # 1: 正在执行
+
         print("LLMStrategyPlanner: Decomposing user requirements into a high-level strategy.")
         
         # 将长期战略记忆融入 prompt
@@ -31,4 +33,5 @@ class LLMStrategyPlanner(BaseLLMEntity):
         else:
             print("Error: LLMStrategyPlanner received no response.")
         
+        self._update_status(mcp, 2) # 2: 已完成
         return mcp

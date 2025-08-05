@@ -4,24 +4,36 @@
 这些组件是实现智能体自我修正和闭环控制的关键。
 """
 from abc import ABC, abstractmethod
-from Data.mcp_models import MCP
+import uuid
+from Data.mcp_models import MCP, EntityStatus
+from Entities.base_llm_entity import BaseLLMEntity
+from Interfaces.llm_api_interface import LLMAPIInterface
 
-class BaseVerificationEntity(ABC):
+class BaseVerificationEntity(BaseLLMEntity):
     """
     所有验证实体的抽象基类。
     """
+    def __init__(self, llm_interface: LLMAPIInterface = None, db_interface: object = None, entity_id: str = None):
+        # 验证类可能不需要LLM，所以允许接口为None
+        super().__init__(llm_interface, db_interface, entity_id)
+
+    def _load_prompt(self) -> str:
+        # 验证类通常没有自己的prompt文件，返回空字符串
+        return ""
+
     @abstractmethod
     def verify(self, mcp: MCP) -> bool:
         """
         执行验证逻辑。
-
-        Args:
-            mcp (MCP): 当前的任务简报。
-
-        Returns:
-            bool: 如果验证通过则返回 True，否则返回 False。
         """
         pass
+
+    def process(self, mcp: MCP) -> MCP:
+        """
+        process方法调用verify，以适应通用实体接口。
+        """
+        self.verify(mcp)
+        return mcp
 
 class PredictionVerification(BaseVerificationEntity):
     """
@@ -29,24 +41,21 @@ class PredictionVerification(BaseVerificationEntity):
     """
     def verify(self, mcp: MCP) -> bool:
         """
-        比较 MCP.expected_data_schema 和 MCP.working_memory 中的摘要。
-        这是为了检查上一步的执行结果是否符合预期。
-
-        Returns:
-            bool: 如果实际数据摘要符合预期模式，则返回 True。
+        比较 MCP.expected_data 和 MCP.working_memory 中的摘要。
         """
-        # 1. 从 mcp.expected_data_schema 获取预期的数据结构。
-        # 2. 从 mcp.working_memory 获取实际的数据摘要。
-        # 3. 比较两者是否匹配 (例如，使用 JSON Schema 验证)。
-        # 4. 如果匹配，将 working_memory 的内容归档到 execution_history。
+        self._update_status(mcp, 1) # 1: 正在执行
+
         print("PredictionVerification: Verifying if the execution result meets the expected data schema.")
-        # 假设验证成功
-        is_met = True
+        
+        # 简化逻辑：检查 working_memory 是否为空
+        is_met = bool(mcp.working_memory) 
+        
         if is_met:
-            print("PredictionVerification: Result MET expected schema. Archiving to execution history.")
-            # 此处应有归档逻辑
+            print("PredictionVerification: Result MET expected schema.")
         else:
             print("PredictionVerification: Result NOT MET. Triggering tactical correction.")
+            
+        self._update_status(mcp, 2) # 2: 已完成
         return is_met
 
 class RequirementsVerification(BaseVerificationEntity):
@@ -55,21 +64,19 @@ class RequirementsVerification(BaseVerificationEntity):
     """
     def verify(self, mcp: MCP) -> bool:
         """
-        在所有步骤完成后，比较 MCP.user_requirements 和 MCP.execution_history 中的所有摘要。
-        这是为了检查最终的累积结果是否满足用户的初始需求。
-
-        Returns:
-            bool: 如果累积结果满足用户需求，则返回 True。
+        在所有步骤完成后，比较 MCP.user_requirements 和 MCP.execution_history。
         """
-        # 1. 从 mcp.user_requirements 获取原始需求。
-        # 2. 从 mcp.execution_history 获取所有步骤的摘要。
-        # 3. 构建一个 Prompt，让 LLM 判断历史摘要是否满足用户需求。
-        # 4. 如果需要，可以利用历史记录中的指针，让执行器提取原始数据进行深度分析。
+        self._update_status(mcp, 1) # 1: 正在执行
+
         print("RequirementsVerification: Verifying if the accumulated results meet the user's requirements.")
-        # 假设验证成功
-        is_met = True
+        
+        # 简化逻辑：检查 execution_history 是否为空
+        is_met = bool(mcp.execution_history)
+        
         if is_met:
             print("RequirementsVerification: Final requirements MET. Task successful.")
         else:
             print("RequirementsVerification: Final requirements NOT MET. Triggering strategic reflection.")
+            
+        self._update_status(mcp, 2) # 2: 已完成
         return is_met

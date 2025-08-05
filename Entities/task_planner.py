@@ -15,8 +15,11 @@ class LLMTaskPlanner(BaseLLMEntity):
         """
         读取宏观步骤和短期战术经验，生成具体的子目标和可执行命令，并更新 MCP。
         """
+        self._update_status(mcp, 1)
+
         if not mcp.current_strategy_plan:
             print("Error: No strategy plan to process.")
+            self._update_status(mcp, 2)
             return mcp
 
         print("LLMTaskPlanner: Breaking down a strategy step into a specific subgoal and command.")
@@ -45,4 +48,5 @@ class LLMTaskPlanner(BaseLLMEntity):
         except json.JSONDecodeError:
             print(f"Error: Failed to decode JSON from LLMTaskPlanner. Response:\n{response}")
             
+        self._update_status(mcp, 2)
         return mcp

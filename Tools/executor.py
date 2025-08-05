@@ -3,68 +3,77 @@
 此文件定义了 Executor (执行器) 类。
 执行器是连接规划和行动的桥梁，负责调用工具、协调数据流，
 并严格遵守“原始数据存入RedisJSON，摘要存入MCP”的核心原则。
-执行器类，负责调用工具并协调与数据库的交互。
 """
 from Data.mcp_models import MCP
-from Interfaces.database_interface import DatabaseInterface
-from Entities.llm_entities import LLMFilterSummary
+from Interfaces.database_interface import RedisClient
+from Entities.filter_summary import LLMFilterSummary
 from .tool_registry import ToolRegistry
 import hashlib
-import json
 
 class ToolExecutor:
     """
-    执行器类，执行MCP中指定的命令。
+    执行器类，负责在运行时实例化和执行工具。
+    它现在还将 RedisClient 的实例传递给它创建的每个工具。
     """
-    def __init__(self, db_interface: DatabaseInterface, summarizer: LLMFilterSummary):
-        """
-        初始化执行器。
-
-        Args:
-            db_interface (DatabaseInterface): 数据库接口的实例，用于与 RedisJSON 交互。
-            summarizer (LLMFilterSummary): LLM 摘要器的实例，用于处理原始数据。
-        """
+    def __init__(self, db_interface: RedisClient, llm_summarizer: LLMFilterSummary):
         self.db_interface = db_interface
-        self.summarizer = summarizer
+        self.llm_summarizer = llm_summarizer
         self.tool_registry = ToolRegistry()
+        self.entity_id = self.__class__.__name__
 
-    def execute_command(self, mcp: MCP) -> MCP:
+    def execute(self, mcp: MCP) -> MCP:
         """
         执行 MCP 中定义的命令。
-
-        Args:
-            mcp (MCP): 包含待执行命令的任务简报。
-
-        Returns:
-            MCP: 更新了执行结果（摘要和指针）的任务简报。
+        1. 从注册表获取工具类。
+        2. 实例化工具，并将 RedisClient 实例和 LLMFilterSummary 实例传递给它。
+        3. 执行工具。
+        4. 工具执行后，它将自行处理数据存储和摘要生成。
+        5. 从工具的执行结果中更新 MCP。
         """
         command = mcp.executable_command
+        if not command:
+            print("Executor Error: No executable command found in MCP.")
+            return mcp
+
         tool_name = command.get("tool")
         tool_params = command.get("params", {})
 
         if not tool_name:
-            raise ValueError("No tool specified in the executable command.")
+            print("Executor Error: No tool specified in the command.")
+            return mcp
 
-        # 1. 从工具注册表中获取工具并执行
-        tool = self.tool_registry.get_tool(tool_name)
-        print(f"Executor: Executing tool '{tool_name}' with params: {tool_params}")
-        raw_data = tool.execute(**tool_params)
+        try:
+            # 1. 从注册表获取工具类
+            tool_class = self.tool_registry.get_tool_class(tool_name)
+            
+            # 2. 实例化工具，并传入 db_interface 和 llm_summarizer
+            tool_instance = tool_class(
+                db_interface=self.db_interface,
+                llm_summarizer=self.llm_summarizer
+            )
+            
+            print(f"Executor: Executing tool '{tool_instance.tool_id}' (Instance: {tool_instance.instance_id}) with params: {tool_params}")
+            
+            # 3. 执行工具，现在工具的 execute 方法需要 mcp 参数
+            execution_result = tool_instance.execute(mcp, **tool_params)
 
-        # 2. 将原始数据存入 RedisJSON
-        #    Key 的格式: task_id:data_type:unique_hash
-        data_key = f"{mcp.task_id}:{tool_name}:{hash(str(raw_data))}"
-        self.db_interface.store_data(data_key, raw_data)
-        print(f"Executor: Stored raw data in database with key '{data_key}'.")
+            # 4. 根据工具返回的结果更新 MCP
+            # 我们期望工具返回一个包含 'summary' 和 'data_key' 的字典
+            if execution_result and isinstance(execution_result, dict):
+                mcp.working_memory = {
+                    "summary": execution_result.get("summary", ""),
+                    "data_pointers": {
+                        "raw_data_key": execution_result.get("data_key", ""),
+                        "tool_instance_id": tool_instance.instance_id
+                    }
+                }
+                print("Executor: Updated working memory based on tool's execution result.")
+            else:
+                print("Executor Warning: Tool did not return the expected dictionary. Working memory not updated.")
 
-        # 3. 调用 LLMFilterSummary 生成摘要
-        summary = self.summarizer.process_data(raw_data)
-        print("Executor: Generated summary for the raw data.")
-
-        # 4. 更新 MCP 的 working_memory
-        mcp.working_memory = {
-            "summary": summary,
-            "data_pointer": data_key
-        }
-        print("Executor: Updated MCP's working memory with summary and data pointer.")
+        except ValueError as e:
+            print(f"Execution Error: {e}")
+        except Exception as e:
+            print(f"An unexpected error occurred during execution: {e}")
 
         return mcp
