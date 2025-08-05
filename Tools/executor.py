@@ -8,7 +8,7 @@
 from Data.mcp_models import MCP
 from Interfaces.database_interface import DatabaseInterface
 from Entities.llm_entities import LLMFilterSummary
-from .available_tools import ToolRegistry
+from .tool_registry import ToolRegistry
 import hashlib
 import json
 
