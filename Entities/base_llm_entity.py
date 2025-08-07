@@ -7,7 +7,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 import uuid
 
-from Data.mcp_models import MCP, EntityStatus
+from Data.mcp_models import MCP
 from Interfaces.llm_api_interface import LLMAPIInterface
 from Interfaces.database_interface import DatabaseInterface
 
@@ -23,27 +23,6 @@ class BaseLLMEntity(ABC):
         
         # 为每个实体实例分配一个唯一ID
         self.entity_id = entity_id or f"{self.__class__.__name__}_{uuid.uuid4()}"
-
-    def _update_status(self, mcp: MCP, status_code: int):
-        """
-        更新实体在 MCP 中的状态。
-        :param mcp: MCP 对象。
-        :param status_code: 0 (未开始), 1 (正在执行), 2 (已完成)。
-        """
-        if self.entity_id not in mcp.entity_states:
-            mcp.entity_states[self.entity_id] = EntityStatus(
-                entity_id=self.entity_id,
-                name=self.__class__.__name__
-            )
-        
-        state = mcp.entity_states[self.entity_id]
-        state.status = status_code
-        
-        if status_code == 1: # 正在执行
-            state.cycle_count += 1
-        
-        mcp.entity_states[self.entity_id] = state
-        print(f"[{self.__class__.__name__}] Status updated to {status_code}. Cycle: {state.cycle_count}.")
 
 
     def _load_prompt(self) -> str:
@@ -62,7 +41,7 @@ class BaseLLMEntity(ABC):
         try:
             # 构造相对于当前文件位置的路径
             current_dir = os.path.dirname(os.path.abspath(__file__))
-            prompt_path = os.path.join(current_dir, '..', 'prompts', prompt_name)
+            prompt_path = os.path.join(current_dir, '..', 'Prompts', prompt_name)
             
             with open(prompt_path, 'r', encoding='utf-8') as f:
                 return f.read()

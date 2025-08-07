@@ -4,6 +4,8 @@
 """
 from Data.mcp_models import MCP
 from Entities.base_llm_entity import BaseLLMEntity
+from Interfaces.llm_api_interface import OpenAIInterface
+from Interfaces.database_interface import RedisClient
 
 class LLMFilterSummary(BaseLLMEntity):
     """
@@ -16,13 +18,11 @@ class LLMFilterSummary(BaseLLMEntity):
         :param raw_data: 来自工具的原始数据字符串。
         :return: 返回生成的摘要字符串。
         """
-        self._update_status(mcp, 1) # 1: 正在执行
 
         print("LLMFilterSummary: Summarizing raw data into a lightweight summary.")
         
         if not self.prompt_template or not raw_data:
             print("Warning: No prompt or raw data for summary.")
-            self._update_status(mcp, 2) # 2: 已完成
             return ""
 
         # 限制输入长度，防止超出模型限制
@@ -36,5 +36,14 @@ class LLMFilterSummary(BaseLLMEntity):
             print("Error: LLMFilterSummary received no response.")
             summary = "" #确保返回字符串
         
-        self._update_status(mcp, 2) # 2: 已完成
         return summary
+
+if __name__ == "__main__":
+    mcp = MCP(
+    session_id="test_session_002",
+    user_requirements="预测2030年中国人口"
+    )
+    raw_data = "This is a test raw data."
+    llm_filter_summary = LLMFilterSummary(llm_interface=OpenAIInterface(), db_interface=RedisClient())
+    summary = llm_filter_summary.process(mcp, raw_data)
+    print(summary)
