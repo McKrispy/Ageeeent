@@ -7,6 +7,7 @@ import os
 from abc import ABC, abstractmethod
 from openai import OpenAI
 import google.generativeai as genai
+from dotenv import load_dotenv
 
 class LLMAPIInterface(ABC):
     """
@@ -37,6 +38,7 @@ class OpenAIInterface(LLMAPIInterface):
         """
         初始化OpenAI接口，从环境变量获取API密钥和可选的Base URL
         """
+        load_dotenv()
         api_key = os.getenv('OPENAI_API_KEY')
         if not api_key:
             raise ValueError("OPENAI_API_KEY environment variable is required")
