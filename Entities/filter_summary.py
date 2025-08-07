@@ -43,7 +43,6 @@ if __name__ == "__main__":
     session_id="test_session_002",
     user_requirements="预测2030年中国人口"
     )
-    raw_data = "This is a test raw data."
     llm_filter_summary = LLMFilterSummary(llm_interface=OpenAIInterface(), db_interface=RedisClient())
     summary = llm_filter_summary.process(mcp, raw_data)
     print(summary)

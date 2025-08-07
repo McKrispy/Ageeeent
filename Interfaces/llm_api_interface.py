@@ -79,6 +79,7 @@ class GoogleCloudInterface(LLMAPIInterface):
         """
         初始化Google AI接口，从环境变量获取API密钥
         """
+        load_dotenv()
         api_key = os.getenv('GOOGLE_CLOUD_API_KEY')
         if not api_key:
             raise ValueError("GOOGLE_CLOUD_API_KEY environment variable is required")

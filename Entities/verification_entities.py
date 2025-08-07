@@ -43,7 +43,6 @@ class PredictionVerification(BaseVerificationEntity):
         """
         比较 MCP.expected_data 和 MCP.working_memory 中的摘要。
         """
-        self._update_status(mcp, 1) # 1: 正在执行
 
         print("PredictionVerification: Verifying if the execution result meets the expected data schema.")
         
@@ -55,7 +54,6 @@ class PredictionVerification(BaseVerificationEntity):
         else:
             print("PredictionVerification: Result NOT MET. Triggering tactical correction.")
             
-        self._update_status(mcp, 2) # 2: 已完成
         return is_met
 
 class RequirementsVerification(BaseVerificationEntity):
@@ -66,7 +64,6 @@ class RequirementsVerification(BaseVerificationEntity):
         """
         在所有步骤完成后，比较 MCP.user_requirements 和 MCP.execution_history。
         """
-        self._update_status(mcp, 1) # 1: 正在执行
 
         print("RequirementsVerification: Verifying if the accumulated results meet the user's requirements.")
         
@@ -78,5 +75,4 @@ class RequirementsVerification(BaseVerificationEntity):
         else:
             print("RequirementsVerification: Final requirements NOT MET. Triggering strategic reflection.")
             
-        self._update_status(mcp, 2) # 2: 已完成
         return is_met
