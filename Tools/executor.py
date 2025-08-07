@@ -6,6 +6,7 @@
 """
 from Data.mcp_models import MCP
 from Interfaces.database_interface import RedisClient
+from Interfaces.llm_api_interface import OpenAIInterface
 from Entities.filter_summary import LLMFilterSummary
 from .tool_registry import ToolRegistry
 import hashlib
@@ -77,3 +78,20 @@ class ToolExecutor:
             print(f"An unexpected error occurred during execution: {e}")
 
         return mcp
+
+if __name__ == "__main__":
+    llm_interface = OpenAIInterface()
+    db_interface = RedisClient()
+    executor = ToolExecutor(db_interface, LLMFilterSummary(llm_interface, db_interface))
+    mcp = MCP(
+    session_id="test_session_002",
+    user_requirements="预测2030年中国人口"
+)
+    mcp.executable_command = {
+        "tool": "web_search",
+        "params": {
+            "keywords": ["2030", "中国", "人口"]
+        }
+    }
+    executor.execute(mcp)
+    

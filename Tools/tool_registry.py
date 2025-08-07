@@ -26,7 +26,7 @@ class ToolRegistry:
 
     def get_tool_class(self, name: str) -> type[BaseTool]:
         """
-        根据名称获取工具的*类*。
+        根据名称获取工具的类。
         Executor将负责实例化这个类。
 
         Args:

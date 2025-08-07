@@ -61,7 +61,7 @@ class RedisClient(DatabaseInterface):
         self.host = os.getenv('REDIS_HOST', 'localhost')
         self.port = int(os.getenv('REDIS_PORT', 6379))
         self.db = int(os.getenv('REDIS_DB', 0))
-        self.client = None
+        self.client = self.connect()
 
     def connect(self):
         """
