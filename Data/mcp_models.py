@@ -9,16 +9,6 @@ from typing import List, Dict, Any
 from pydantic import BaseModel, Field
 import uuid
 
-class ExecutionLogEntry(BaseModel):
-    """
-    执行历史中的单个条目，用于归档已完成步骤的摘要和数据指针。
-    对应 Reflect 阶段的 Raw Result 的一部分。
-    """
-    subgoal: str = Field(description="该条目对应的子目标。")
-    summary: str = Field(description="执行结果的关键信息摘要。")
-    data_pointers: Dict[str, str] = Field(description="指向 RedisJSON 中存储的原始数据的键（指针）集合。")
-    status: str = Field(default="Success", description="该步骤的执行状态。")
-
 class MCP(BaseModel):
     """
     MCP (Memory-Context-Prompt) 协议的核心数据类。
@@ -28,7 +18,6 @@ class MCP(BaseModel):
     session_id: str = Field(description="标识单次端到端对话的唯一ID。")
     global_cycle_count: int = Field(default=0, description="整个工作流的主循环次数。")
     
-    task_id: str = Field(default_factory=lambda: f"task_{uuid.uuid4()}", description="本次复杂任务的全局唯一ID，用作RedisJSON的key前缀。")
     user_requirements: str = Field(description="用户完整的原始需求文本。")
     
     # Plan & Study 阶段的产出
@@ -40,21 +29,9 @@ class MCP(BaseModel):
     # Execute 阶段的产出
     working_memory: Dict[str, Any] = Field(default_factory=dict, description="一个临时的“便签”，存放当前步骤产生的摘要和数据指针(RedisJSON Keys)。")
 
-    # Reflect 阶段的产出
-    execution_history: List[ExecutionLogEntry] = Field(default_factory=list, description="一个包含摘要和指针的日志，记录所有已成功完成的步骤。")
-
-    # 新增：用于追踪所有实体状态的字典
-    entity_states: Dict[str, "EntityStatus"] = Field(default_factory=dict, description="存储系统中所有实体（包括LLM实体和工具）的当前状态。")
+    # 新增：用于存储每个周期结束时 MCP 完整状态的 JSON 字符串列表
+    cycle_history: List[str] = Field(default_factory=list, description="存储每个周期结束时 MCP 完整状态的 JSON 字符串列表。")
     
     class Config:
         """Pydantic model configuration."""
         validate_assignment = True
-
-class EntityStatus(BaseModel):
-    """
-    用于在 MCP 的 entity_states 中记录每个实体状态的模型。
-    """
-    entity_id: str = Field(description="实体的唯一标识符。")
-    name: str = Field(description="实体的友好名称（类名）。")
-    cycle_count: int = Field(default=0, description="实体在当前工作流中被执行的轮次计数。")
-    status: int = Field(default=0, description="实体的当前状态：0-未开始, 1-正在执行, 2-已完成。")
