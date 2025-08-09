@@ -20,6 +20,10 @@ class WebSearchTool(BaseTool):
         :param llm_summarizer: LLMFilterSummary 的实例，用于生成摘要。
         """
         super().__init__(db_interface, llm_summarizer)
+        if not self.db_interface:
+            print("WebSearchTool: No database interface provided!")
+        else:
+            print(f"WebSearchTool: Database interface initialized with host: {self.db_interface.host}, port: {self.db_interface.port}, db: {self.db_interface.db}")
 
     def execute(self, mcp: MCP, keywords: list, num_results: int = 5, **kwargs) -> dict:
         """
@@ -44,6 +48,7 @@ class WebSearchTool(BaseTool):
         
         # 3. 将原始数据存入 Redis
         print(f"WebSearchTool: Storing raw content in Redis with key: {data_key}")
+        print(f"\nWebSearchTool: Database interface: {self.db_interface}")
         self.db_interface.store_data(data_key, {"content": raw_data_str})
         
         # 4. 调用 LLMFilterSummary 生成摘要
