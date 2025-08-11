@@ -4,6 +4,7 @@ from ddgs import DDGS
 import requests
 import json
 
+from Interfaces.llm_api_interface import GoogleCloudInterface
 from Tools.utils.base_tool import BaseTool
 from Data.mcp_models import MCP
 from Interfaces.database_interface import RedisClient
@@ -20,6 +21,10 @@ class WebSearchTool(BaseTool):
         :param llm_summarizer: LLMFilterSummary 的实例，用于生成摘要。
         """
         super().__init__(db_interface, llm_summarizer)
+        if not self.db_interface:
+            print("WebSearchTool: No database interface provided!")
+        else:
+            print(f"WebSearchTool: Database interface initialized with host: {self.db_interface.host}, port: {self.db_interface.port}, db: {self.db_interface.db}")
 
     def execute(self, mcp: MCP, keywords: list, num_results: int = 5, **kwargs) -> dict:
         """
@@ -32,8 +37,9 @@ class WebSearchTool(BaseTool):
         print(f"WebSearchTool: Starting web search with keywords: {keywords}")
 
         # 1. 执行搜索并获取原始内容
-        html_results = self._search(keywords, num_results)
-        content_results = self._extract_content(html_results)
+        content_results = self._search_and_extract(keywords, num_results)
+        
+        print(f"WebSearchTool: Content results: {content_results}")
         
         # 将所有内容结果合并为一个字符串
         raw_data_str = json.dumps(content_results, indent=2)
@@ -44,7 +50,9 @@ class WebSearchTool(BaseTool):
         
         # 3. 将原始数据存入 Redis
         print(f"WebSearchTool: Storing raw content in Redis with key: {data_key}")
-        self.db_interface.store_data(data_key, {"content": raw_data_str})
+        print(f"\nWebSearchTool: Database interface: {self.db_interface}")
+
+        self.db_interface.store_data(data_key, content_results)
         
         # 4. 调用 LLMFilterSummary 生成摘要
         print("WebSearchTool: Calling LLMFilterSummary to generate summary...")
@@ -57,60 +65,33 @@ class WebSearchTool(BaseTool):
             "data_key": data_key
         }
 
-    def _search(self, keywords: list, num_results: int) -> list:
+    def _search_and_extract(self, keywords: list, num_results: int) -> list[dict]:
         """
-        使用 DuckDuckGo 执行搜索并获取 HTML 页面。
+        Fetch pages and extract clean text in one pass.
+        Returns: [{"url": str, "content": str}, ...]
         """
         query = " ".join(keywords)
-        html_results = []
+        results: list[dict] = []
         print(f"WebSearchTool: Performing search for '{query}'...")
         with DDGS() as ddgs:
-            for result in ddgs.text(query, max_results=num_results):
-                url = result.get("href")
+            for hit in ddgs.text(query, max_results=num_results):
+                url = hit.get("href")
                 if not url:
                     continue
                 try:
-                    response = requests.get(url, timeout=10, headers={
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-                    })
-                    response.raise_for_status()
-                    html_results.append({
-                        "url": url,
-                        "html": response.text
-                    })
+                    resp = requests.get(
+                        url,
+                        timeout=10,
+                        headers={"User-Agent": "Mozilla/5.0 Chrome/123 Safari/537.36"},
+                    )
+                    resp.raise_for_status()
+                    soup = BeautifulSoup(resp.text, "html.parser")
+                    # remove non-content tags
+                    for tag in soup(["script", "style", "nav", "footer", "aside", "form"]):
+                        tag.decompose()
+                    text = " ".join(soup.get_text(separator=" ", strip=True).split())
+                    if text:
+                        results.append({"url": url, "content": text})
                 except requests.RequestException as e:
                     print(f"WebSearchTool: Failed to fetch {url}: {e}")
-        return html_results
-
-    def _extract_content(self, html_results: list) -> list:
-        """
-        从 HTML 中提取正文内容。
-        """
-        content_results = []
-        print("WebSearchTool: Extracting content from fetched HTMLs...")
-        for item in html_results:
-            url = item["url"]
-            html = item["html"]
-            try:
-                soup = BeautifulSoup(html, "html.parser")
-                # 移除脚本、样式、导航等非主要内容元素
-                for tag in soup(["script", "style", "nav", "footer", "aside", "form"]):
-                    tag.decompose()
-                
-                text = soup.get_text(separator=" ", strip=True)
-                clean_text = ' '.join(text.split())
-                
-                content_results.append({
-                    "url": url,
-                    "content": clean_text
-                })
-            except Exception as e:
-                print(f"WebSearchTool: Error parsing content from {url}: {e}")
-        return content_results
-
-
-'''if __name__ == "__main__":
-    web_search_tool = WebSearchTool()
-    results = web_search_tool.execute(keywords=["python", "programming"], num_results=2)
-    print(results)
-'''
+        return results

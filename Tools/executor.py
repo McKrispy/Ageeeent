@@ -6,7 +6,7 @@
 """
 from Data.mcp_models import MCP
 from Interfaces.database_interface import RedisClient
-from Interfaces.llm_api_interface import OpenAIInterface
+from Interfaces.llm_api_interface import OpenAIInterface, GoogleCloudInterface
 from Entities.filter_summary import LLMFilterSummary
 from .tool_registry import ToolRegistry
 import hashlib
@@ -38,6 +38,8 @@ class ToolExecutor:
 
         tool_name = command.get("tool")
         tool_params = command.get("params", {})
+
+        print(f"Executor: Executing tool '{tool_name}' with params: {tool_params}")
 
         if not tool_name:
             print("Executor Error: No tool specified in the command.")
@@ -80,7 +82,7 @@ class ToolExecutor:
         return mcp
 
 if __name__ == "__main__":
-    llm_interface = OpenAIInterface()
+    llm_interface = GoogleCloudInterface()
     db_interface = RedisClient()
     executor = ToolExecutor(db_interface, LLMFilterSummary(llm_interface, db_interface))
     mcp = MCP(
