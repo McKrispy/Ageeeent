@@ -2,7 +2,7 @@
 """
 整个工作流的入口，负责接收用户需求并驱动所有 LLM 实体，实现完整的“研究-执行-反思”闭环。
 """
-from Data.mcp_models import MCP
+from Data.mcp_models import MCP, WorkingMemory
 from Data.strategies import StrategyData
 from Interfaces.llm_api_interface import OpenAIInterface
 from Interfaces.database_interface import RedisClient  # 更改导入
@@ -19,6 +19,7 @@ class AgentWorkflow:
     """
     def __init__(self, user_requirements: str, session_id: str):
         self.mcp = MCP(user_requirements=user_requirements, session_id=session_id)
+        self.working_memory = WorkingMemory(session_id=session_id)
         self.strategies = StrategyData()
 
         # 初始化所有接口
@@ -47,14 +48,14 @@ class AgentWorkflow:
             if self.mcp.executable_command:
                 filter_summary = LLMFilterSummary(self.llm_interface)
                 tool_executor = ToolExecutor(db_interface=self.db_interface, llm_summarizer=filter_summary)
-                self.mcp = tool_executor.execute(self.mcp)
+                self.working_memory = tool_executor.execute(self.mcp, self.working_memory)
             else:
                 print("Warning: No executable command planned. Skipping execution.")
                 break
 
             # 4. 战术反思 (预测验证)
             prediction_verifier = PredictionVerification()
-            is_prediction_met = prediction_verifier.verify(self.mcp)
+            is_prediction_met = prediction_verifier.verify(self.mcp, self.working_memory)
             
             # 保存当前周期的 MCP 快照
             current_mcp_snapshot = self.mcp.model_dump()
@@ -69,6 +70,8 @@ class AgentWorkflow:
                 print("Prediction met. Proceeding to the next step.")
                 # 移除已完成的步骤
                 next_strategy_plan = self.mcp.current_strategy_plan[1:]
+                # 清空 working_memory 以备下一个循环使用
+                self.working_memory.data.clear()
             else:
                 print("Prediction not met. Updating execution policy for replanning.")
                 failure_feedback = f"The command '{self.mcp.executable_command}' failed to produce data matching schema '{self.mcp.expected_data}'."

@@ -9,6 +9,26 @@ from typing import List, Dict, Any
 from pydantic import BaseModel, Field
 import uuid
 
+
+class WorkingMemory(BaseModel):
+    """
+    一个独立的数据类，专门用于存放所有在 Execution 阶段获取的外部数据信息。
+    它作为一个临时的“便签”，存放当前步骤产生的摘要和数据指针(RedisJSON Keys)。
+    """
+    session_id: str = Field(description="与MCP关联的会话ID，确保数据归属清晰。")
+    data: Dict[str, Any] = Field(default_factory=dict, description="存放当前执行步骤产生的摘要和数据指针(RedisJSON Keys)。")
+    '''
+    Example of data:
+    {
+        "test_session_002:0:WebSearchTool:WebSearchTool_57abee32-ff96-495a-9c08-0a34ef7e6bdb": "summary of web search result",
+        ...
+    }
+    '''
+
+    class Config:
+        """Pydantic model configuration."""
+        validate_assignment = True
+
 class MCP(BaseModel):
     """
     MCP (Memory-Context-Prompt) 协议的核心数据类。
@@ -26,12 +46,6 @@ class MCP(BaseModel):
     executable_command: Dict[str, Any] = Field(default_factory=dict, description="由任务规划器生成的、可直接执行的标准化命令。")
     expected_data: Dict[str, Any] = Field(default_factory=dict, description="对当前子目标预期结果的数据规范，用于后续验证。")
 
-    # Execute 阶段的产出
-    working_memory: Dict[str, Any] = Field(default_factory=dict, description="一个临时的“便签”，存放当前步骤产生的摘要和数据指针(RedisJSON Keys)。")
-    '''{
-        {"test_session_002:0:WebSearchTool:WebSearchTool_57abee32-ff96-495a-9c08-0a34ef7e6bdb": "summary"},
-        ...
-    }'''
     # 新增：用于存储每个周期结束时 MCP 完整状态的 JSON 字符串列表
     cycle_history: List[str] = Field(default_factory=list, description="存储每个周期结束时 MCP 完整状态的 JSON 字符串列表。")
     
