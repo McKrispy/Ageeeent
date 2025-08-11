@@ -28,7 +28,10 @@ class MCP(BaseModel):
 
     # Execute 阶段的产出
     working_memory: Dict[str, Any] = Field(default_factory=dict, description="一个临时的“便签”，存放当前步骤产生的摘要和数据指针(RedisJSON Keys)。")
-
+    '''{
+        {"test_session_002:0:WebSearchTool:WebSearchTool_57abee32-ff96-495a-9c08-0a34ef7e6bdb": "summary"},
+        ...
+    }'''
     # 新增：用于存储每个周期结束时 MCP 完整状态的 JSON 字符串列表
     cycle_history: List[str] = Field(default_factory=list, description="存储每个周期结束时 MCP 完整状态的 JSON 字符串列表。")
     

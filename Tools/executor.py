@@ -9,7 +9,7 @@ from Interfaces.database_interface import RedisClient
 from Interfaces.llm_api_interface import OpenAIInterface, GoogleCloudInterface
 from Entities.filter_summary import LLMFilterSummary
 from .tool_registry import ToolRegistry
-import hashlib
+# import hashlib
 
 class ToolExecutor:
     """
@@ -61,39 +61,45 @@ class ToolExecutor:
             execution_result = tool_instance.execute(mcp, **tool_params)
 
             # 4. 根据工具返回的结果更新 MCP
-            # 我们期望工具返回一个包含 'summary' 和 'data_key' 的字典
             if execution_result and isinstance(execution_result, dict):
-                mcp.working_memory = {
-                    "summary": execution_result.get("summary", ""),
-                    "data_pointers": {
-                        "raw_data_key": execution_result.get("data_key", ""),
-                        "tool_instance_id": tool_instance.instance_id
-                    }
-                }
+                mcp.working_memory.update(execution_result)
                 print("Executor: Updated working memory based on tool's execution result.")
             else:
                 print("Executor Warning: Tool did not return the expected dictionary. Working memory not updated.")
 
         except ValueError as e:
-            print(f"Execution Error: {e}")
+            print(f"Executor Error: {e}")
         except Exception as e:
-            print(f"An unexpected error occurred during execution: {e}")
+            print(f"Executor Error: {e}")
 
         return mcp
 
 if __name__ == "__main__":
-    llm_interface = GoogleCloudInterface()
+    llm_interface = OpenAIInterface()
     db_interface = RedisClient()
     executor = ToolExecutor(db_interface, LLMFilterSummary(llm_interface, db_interface))
     mcp = MCP(
     session_id="test_session_002",
-    user_requirements="预测2030年中国人口"
-)
-    mcp.executable_command = {
+    user_requirements="预测2030年中国人口",
+    executable_command = {
         "tool": "web_search",
         "params": {
-            "keywords": ["2030", "中国", "人口"]
+            "entries": [
+                {
+                    "keywords": ["2030", "中国", "人口", "预测"],
+                    "num_results": 3
+                },
+                {
+                    "keywords": ["2025", "中国", "人口"],
+                    "num_results": 3
+                },
+                {
+                    "keywords": ["中国", "人口", "趋势"],
+                    "num_results": 3
+                }
+            ]
         }
-    }
+    })
     executor.execute(mcp)
+    print(mcp)
     
