@@ -4,8 +4,9 @@
 """
 from Data.mcp_models import MCP
 from Entities.base_llm_entity import BaseLLMEntity
-from Interfaces.llm_api_interface import OpenAIInterface
+from Interfaces.llm_api_interface import OpenAIInterface, GoogleCloudInterface
 from Interfaces.database_interface import RedisClient
+# from Interfaces.database_interface import RedisClient
 
 class LLMFilterSummary(BaseLLMEntity):
     """
@@ -37,12 +38,12 @@ class LLMFilterSummary(BaseLLMEntity):
             summary = "" #确保返回字符串
         
         return summary
-
+    
 if __name__ == "__main__":
-    mcp = MCP(
-    session_id="test_session_002",
-    user_requirements="预测2030年中国人口"
-    )
-    llm_filter_summary = LLMFilterSummary(llm_interface=OpenAIInterface(), db_interface=RedisClient())
+    mcp = MCP(session_id="test", user_requirements="How to program in python")
+    raw_data = "Python is a versatile programming language. It is widely used for web development, data analysis, and artificial intelligence."
+    llm_interface = OpenAIInterface()
+    db_interface = RedisClient()
+    llm_filter_summary = LLMFilterSummary(llm_interface, db_interface, "test_filter_summary")
     summary = llm_filter_summary.process(mcp, raw_data)
     print(summary)

@@ -4,7 +4,7 @@ from ddgs import DDGS
 import requests
 import json
 
-from Interfaces.llm_api_interface import GoogleCloudInterface
+from Interfaces.llm_api_interface import OpenAIInterface
 from Tools.utils.base_tool import BaseTool
 from Data.mcp_models import MCP
 from Interfaces.database_interface import RedisClient
@@ -26,10 +26,9 @@ class WebSearchTool(BaseTool):
         else:
             print(f"WebSearchTool: Database interface initialized with host: {self.db_interface.host}, port: {self.db_interface.port}, db: {self.db_interface.db}")
 
-    def execute(self, mcp: MCP, keywords: list, num_results: int = 5, **kwargs) -> dict:
+    def execute(self, mcp: MCP, keywords: list, num_results: int = 3, **kwargs) -> dict:
         """
         执行完整的搜索、存储和摘要流程。
-        :param mcp: 当前的 MCP 实例。
         :param keywords: 搜索关键词列表。
         :param num_results: 需要返回的搜索结果数量。
         :return: 一个包含 'summary' 和 'data_key' 的字典。
@@ -51,7 +50,6 @@ class WebSearchTool(BaseTool):
         # 3. 将原始数据存入 Redis
         print(f"WebSearchTool: Storing raw content in Redis with key: {data_key}")
         print(f"\nWebSearchTool: Database interface: {self.db_interface}")
-
         self.db_interface.store_data(data_key, content_results)
         
         # 4. 调用 LLMFilterSummary 生成摘要
@@ -59,10 +57,9 @@ class WebSearchTool(BaseTool):
         summary = self.llm_summarizer.process(mcp, raw_data=raw_data_str)
         
         # 5. 返回摘要和数据键给 Executor
-        print("WebSearchTool: Execution complete. Returning summary and data key.")
+        print(f"WebSearchTool: Execution complete. Returning {data_key}: {summary}")
         return {
-            "summary": summary,
-            "data_key": data_key
+            data_key: summary
         }
 
     def _search_and_extract(self, keywords: list, num_results: int) -> list[dict]:
@@ -95,3 +92,10 @@ class WebSearchTool(BaseTool):
                 except requests.RequestException as e:
                     print(f"WebSearchTool: Failed to fetch {url}: {e}")
         return results
+    
+if __name__ == "__main__":
+    db_interface = RedisClient()
+    llm_interface = OpenAIInterface()
+    llm_summarizer = LLMFilterSummary(llm_interface, db_interface, "test_filter_summary")
+    web_search_tool = WebSearchTool(db_interface, llm_summarizer)
+    web_search_tool.execute(["python", "programming"])

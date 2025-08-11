@@ -5,9 +5,10 @@
 import os
 import redis
 import json
-from abc import ABC, abstractmethod
-from typing import Any, Dict
 import uuid
+from abc import ABC, abstractmethod
+from typing import Any
+from dotenv import load_dotenv
 
 # 用于存储所有会话ID的Redis集合的键名
 SESSIONS_SET_KEY = "agent_sessions_set"
@@ -58,9 +59,10 @@ class RedisClient(DatabaseInterface):
         """
         从环境变量初始化Redis连接参数。
         """
-        self.host = os.getenv('REDIS_HOST', 'localhost')
-        self.port = int(os.getenv('REDIS_PORT', 6379))
-        self.db = int(os.getenv('REDIS_DB', 0))
+        load_dotenv()
+        self.host = os.getenv('REDIS_HOST')
+        self.port = int(os.getenv('REDIS_PORT'))
+        self.db = int(os.getenv('REDIS_DB'))
         self.connect()
 
     def connect(self):
