@@ -1,9 +1,10 @@
 from abc import ABC, abstractmethod
 from typing import Any
 import uuid
+
 from Interfaces.database_interface import RedisClient
 from Entities.filter_summary import LLMFilterSummary
-from Data.mcp_models import MCP
+from Data.mcp_models import MCP, WorkingMemory
 
 class BaseTool(ABC):
     """

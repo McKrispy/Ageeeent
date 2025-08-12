@@ -1,21 +1,28 @@
 {
-    "web_search" : {
-        "entries" : [
-            {
-                "keywords" : ["2025","华东理工","中德工学院"],
-                "num_result" : 3
-            },
-            {
-                "keywords" : ["2025","上海师范","马克思主义学院"],
-                "num_result" : 3
-            },
-            {
-                "keywords" : ["2025","上海应用技术大学","信息工程学院"],
-                "num_result" : 3
+    "tools": [
+        {
+            "tool": "web_search",
+            "params": {
+                "entries": [
+                    {
+                        "keywords": [
+                            "2030",
+                            "中国",
+                            "人口",
+                            "预测"
+                        ],
+                        "num_results": 3
+                    },
+                    {
+                        "keywords": [
+                            "2025",
+                            "中国",
+                            "人口"
+                        ],
+                        "num_results": 3
+                    }
+                ]
             }
-        ]
-    },
-    "structure_data" : {
-        "entries" : []
-    }
+        }
+    ]
 }
