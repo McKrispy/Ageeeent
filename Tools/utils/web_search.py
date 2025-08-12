@@ -24,7 +24,7 @@ class WebSearchTool(BaseTool):
         if not self.db_interface:
             print("WebSearchTool: No database interface provided!")
         else:
-            print(f"WebSearchTool: Database interface initialized with host: {self.db_interface.host}, port: {self.db_interface.port}, db: {self.db_interface.db}")
+            print(f"WebSearchTool: Database interface connected with host: {self.db_interface.host}, port: {self.db_interface.port}, db: {self.db_interface.db}")
 
     def execute(self, mcp: MCP, keywords: list, num_results: int = 3, **kwargs) -> dict:
         """
@@ -33,12 +33,8 @@ class WebSearchTool(BaseTool):
         :param num_results: 需要返回的搜索结果数量。
         :return: 一个包含 'summary' 和 'data_key' 的字典。
         """
-        print(f"WebSearchTool: Starting web search with keywords: {keywords}")
-
         # 1. 执行搜索并获取原始内容
         content_results = self._search_and_extract(keywords, num_results)
-        
-        print(f"WebSearchTool: Content results: {content_results}")
         
         # 将所有内容结果合并为一个字符串
         raw_data_str = json.dumps(content_results, indent=2)
@@ -48,16 +44,12 @@ class WebSearchTool(BaseTool):
         data_key = f"{mcp.session_id}:{mcp.global_cycle_count}:{self.tool_id}:{self.instance_id}"
         
         # 3. 将原始数据存入 Redis
-        print(f"WebSearchTool: Storing raw content in Redis with key: {data_key}")
-        print(f"\nWebSearchTool: Database interface: {self.db_interface}")
         self.db_interface.store_data(data_key, content_results)
         
         # 4. 调用 LLMFilterSummary 生成摘要
-        print("WebSearchTool: Calling LLMFilterSummary to generate summary...")
         summary = self.llm_summarizer.process(mcp, raw_data=raw_data_str)
         
         # 5. 返回摘要和数据键给 Executor
-        print(f"WebSearchTool: Execution complete. Returning {data_key}: {summary}")
         return {
             data_key: summary
         }
@@ -69,7 +61,6 @@ class WebSearchTool(BaseTool):
         """
         query = " ".join(keywords)
         results: list[dict] = []
-        print(f"WebSearchTool: Performing search for '{query}'...")
         with DDGS() as ddgs:
             for hit in ddgs.text(query, max_results=num_results):
                 url = hit.get("href")
