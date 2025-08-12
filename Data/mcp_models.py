@@ -15,7 +15,6 @@ class WorkingMemory(BaseModel):
     一个独立的数据类，专门用于存放所有在 Execution 阶段获取的外部数据信息。
     它作为一个临时的“便签”，存放当前步骤产生的摘要和数据指针(RedisJSON Keys)。
     """
-    session_id: str = Field(description="与MCP关联的会话ID，确保数据归属清晰。")
     data: Dict[str, Any] = Field(default_factory=dict, description="存放当前执行步骤产生的摘要和数据指针(RedisJSON Keys)。")
     '''
     Example of data:
