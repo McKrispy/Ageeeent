@@ -2,7 +2,7 @@
 """
 战略规划器 (What) - 进行高层次战略分解。
 """
-from Data.mcp_models import MCP
+from Data.mcp_models import MCP, StrategyPlan
 from Data.strategies import StrategyData
 from Entities.base_llm_entity import BaseLLMEntity
 
@@ -28,7 +28,7 @@ class LLMStrategyPlanner(BaseLLMEntity):
         if response:
             plan_descriptions = [line.split('.', 1)[-1].strip() for line in response.strip().split('\n') if line.strip()]
             
-            mcp.strategy_plans = [MCP.StrategyPlan(description=desc) for desc in plan_descriptions]
+            mcp.strategy_plans = [StrategyPlan(description=desc) for desc in plan_descriptions]
             
             print(f"Generated strategy plans: {[plan.description for plan in mcp.strategy_plans]}")
         else:

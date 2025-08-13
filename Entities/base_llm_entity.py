@@ -59,7 +59,7 @@ class BaseLLMEntity(ABC):
         return None
 
     @abstractmethod
-    def process(self, mcp: MCP) -> MCP:
+    def process(self, mcp: MCP, *args, **kwargs) -> MCP:
         """
         所有实体都必须实现此方法来处理 MCP 对象。
         """

@@ -1,33 +1,45 @@
 from Entities.base_llm_entity import BaseLLMEntity
-from Data.mcp_models import MCP
+from Data.mcp_models import MCP, CompletionRequirement
 
 class ProfileDrawer(BaseLLMEntity):
     def __init__(self, llm_interface, db_interface, entity_id=None):
         super().__init__(llm_interface, db_interface, entity_id)
 
-    def process(self, mcp: MCP, user_response: str) -> str:
+    def process(self, mcp: MCP, supplementary_info: str, *args, **kwargs) -> MCP:
         """
-        处理原始数据，生成摘要。
-        :param mcp: MCP对象，用于状态更新。
-        :param raw_data: 来自工具的原始数据字符串。
-        :return: 返回生成的摘要字符串。
+        根据用户原始输入和补充信息生成用户画像，并更新MCP。
+        :param mcp: MCP对象，包含用户原始需求。
+        :param supplementary_info: 用户对问题的补充回答。
+        :return: 更新后的MCP对象。
         """
 
-        print("ProfileDrawer: Summarizing raw data into a lightweight summary.")
+        print("ProfileDrawer: Analyzing user profile based on supplementary info.")
         
-        if not self.prompt_template or not user_response:
-            print("Warning: No prompt or raw data for summary.")
-            return ""
+        if not self.prompt_template or not supplementary_info:
+            print("Warning: No prompt or supplementary info for profile drawing.")
+            return mcp
 
+        # 结合原始需求和补充信息来生成画像
+        combined_input = f"Original requirement: {mcp.user_requirements}\n\nSupplementary information: {supplementary_info}"
+        
         # 限制输入长度，防止超出模型限制
-        prompt = self.prompt_template.replace('{{user_response}}', str(user_response)[:8000])
+        prompt = self.prompt_template.replace('{{user_response}}', combined_input[:8000])
         
-        summary = self.llm_interface.get_completion(prompt, model="gpt-3.5-turbo")
+        profile_summary = self.llm_interface.get_completion(prompt, model="gpt-3.5-turbo")
         
-        if summary:
-            print(f"Generated summary: {summary}")
+        if profile_summary:
+            print(f"Generated Profile Summary: {profile_summary}")
         else:
             print("Error: ProfileDrawer received no response.")
-            summary = "" #确保返回字符串
+            profile_summary = "" #确保有默认值
+
+        # 更新MCP的completion_requirement
+        mcp.completion_requirement = CompletionRequirement(
+            original_input=mcp.user_requirements,
+            supplementary_content=supplementary_info,
+            profile_analysis=profile_summary
+        )
+
+        print("MCP's completion_requirement has been updated.")
         
-        return summary
+        return mcp

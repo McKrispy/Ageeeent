@@ -3,7 +3,7 @@
 任务规划器 (How) - 进行精细的战术规划。
 """
 import json
-from Data.mcp_models import MCP
+from Data.mcp_models import MCP, SubGoal, ExecutableCommand
 from Data.strategies import StrategyData
 from Entities.base_llm_entity import BaseLLMEntity
 
@@ -13,7 +13,7 @@ class LLMTaskPlanner(BaseLLMEntity):
     """
     def process(self, mcp: MCP, strategies: StrategyData) -> MCP:
         """
-        读取宏观步骤和短期战术经验，为每个战略计划生成具体的子目标和可执行命令，并更新 MCP。
+        遍历所有战略计划，为每个计划生成子目标和命令，并填充到扁平化的列表中。
         """
 
         if not mcp.strategy_plans:
@@ -29,7 +29,6 @@ class LLMTaskPlanner(BaseLLMEntity):
             
             prompt = self.prompt_template.replace('{{strategic_step}}', prompt_input)
             
-            # 请求JSON输出格式
             response = self.llm_interface.get_completion(
                 prompt, 
                 model="gpt-4-turbo", 
@@ -39,23 +38,24 @@ class LLMTaskPlanner(BaseLLMEntity):
             try:
                 task_json = json.loads(response)
                 
+                # LLM应该返回一个包含子目标列表的JSON
                 for sg_data in task_json.get("sub_goals", []):
-                    sub_goal = MCP.SubGoal(
+                    new_sub_goal = SubGoal(
                         parent_strategy_plan_id=plan.id,
                         description=sg_data.get("description")
                     )
+                    mcp.sub_goals.append(new_sub_goal)
                     
+                    # 每个子目标下应该有对应的可执行命令
                     for cmd_data in sg_data.get("executable_commands", []):
-                        command = MCP.ExecutableCommand(
-                            parent_sub_goal_id=sub_goal.id,
+                        new_command = ExecutableCommand(
+                            parent_sub_goal_id=new_sub_goal.id,
                             tool=cmd_data.get("tool"),
-                            params=cmd_data.get("params")
+                            params=cmd_data.get("params", {})
                         )
-                        sub_goal.executable_commands.append(command)
+                        mcp.executable_commands.append(new_command)
                     
-                    plan.sub_goals.append(sub_goal)
-                    
-                print(f"Generated tasks for plan '{plan.description}': {[sg.description for sg in plan.sub_goals]}")
+                print(f"Generated tasks for plan '{plan.description}'")
 
             except json.JSONDecodeError:
                 print(f"Error: Failed to decode JSON from LLMTaskPlanner. Response:\n{response}")
