@@ -13,37 +13,51 @@ class LLMTaskPlanner(BaseLLMEntity):
     """
     def process(self, mcp: MCP, strategies: StrategyData) -> MCP:
         """
-        读取宏观步骤和短期战术经验，生成具体的子目标和可执行命令，并更新 MCP。
+        读取宏观步骤和短期战术经验，为每个战略计划生成具体的子目标和可执行命令，并更新 MCP。
         """
 
-        if not mcp.current_strategy_plan:
+        if not mcp.strategy_plans:
             print("Error: No strategy plan to process.")
             return mcp
 
-        print("LLMTaskPlanner: Breaking down a strategy step into a specific subgoal and command.")
-        next_step = mcp.current_strategy_plan[0]
-
-        # 将短期战术经验融入 prompt
-        policy_prompt = "\n".join(strategies.execution_policy)
-        prompt_input = f"Strategic Step: {next_step}\n\nRelevant Tactical Experience:\n{policy_prompt}"
+        print("LLMTaskPlanner: Breaking down strategy plans into specific subgoals and commands.")
         
-        prompt = self.prompt_template.replace('{{strategic_step}}', prompt_input)
-        
-        # 请求JSON输出格式
-        response = self.llm_interface.get_completion(
-            prompt, 
-            model="gpt-4-turbo", 
-            response_format={"type": "json_object"}
-        )
-        
-        try:
-            task_json = json.loads(response)
-            mcp.current_subgoal = task_json.get("subgoal")
-            mcp.executable_command = task_json.get("executable_command")
-            mcp.expected_data = task_json.get("expected_data")
-            print(f"Generated task: {mcp.current_subgoal}")
-            print(f"Executable command: {mcp.executable_command}")
-        except json.JSONDecodeError:
-            print(f"Error: Failed to decode JSON from LLMTaskPlanner. Response:\n{response}")
+        for plan in mcp.strategy_plans:
+            # 将短期战术经验融入 prompt
+            policy_prompt = "\n".join(strategies.execution_policy)
+            prompt_input = f"Strategic Step: {plan.description}\n\nRelevant Tactical Experience:\n{policy_prompt}"
             
+            prompt = self.prompt_template.replace('{{strategic_step}}', prompt_input)
+            
+            # 请求JSON输出格式
+            response = self.llm_interface.get_completion(
+                prompt, 
+                model="gpt-4-turbo", 
+                response_format={"type": "json_object"}
+            )
+            
+            try:
+                task_json = json.loads(response)
+                
+                for sg_data in task_json.get("sub_goals", []):
+                    sub_goal = MCP.SubGoal(
+                        parent_strategy_plan_id=plan.id,
+                        description=sg_data.get("description")
+                    )
+                    
+                    for cmd_data in sg_data.get("executable_commands", []):
+                        command = MCP.ExecutableCommand(
+                            parent_sub_goal_id=sub_goal.id,
+                            tool=cmd_data.get("tool"),
+                            params=cmd_data.get("params")
+                        )
+                        sub_goal.executable_commands.append(command)
+                    
+                    plan.sub_goals.append(sub_goal)
+                    
+                print(f"Generated tasks for plan '{plan.description}': {[sg.description for sg in plan.sub_goals]}")
+
+            except json.JSONDecodeError:
+                print(f"Error: Failed to decode JSON from LLMTaskPlanner. Response:\n{response}")
+                
         return mcp

@@ -6,6 +6,7 @@
 """
 import time
 import threading
+from typing import Dict, Any
 
 from Data.mcp_models import MCP, WorkingMemory
 from Interfaces.database_interface import RedisClient
@@ -30,14 +31,13 @@ class ToolExecutor:
         self, mcp: MCP, working_memory: WorkingMemory
     ) -> tuple[MCP, WorkingMemory]:
         """
-        执行 MCP 中定义的命令。
+        执行单个命令。
         1. 从注册表获取工具类。
-        2. 为每个entry创建独立的工具实例，并将 RedisClient 实例和 LLMFilterSummary 实例传递给它。
+        2. 为每个entry创建独立的工具实例。
         3. 并行执行工具。
         4. 工具执行后，它将自行处理数据存储和摘要生成。
-        5. 从工具的执行结果中更新 MCP。
+        5. 从工具的执行结果中更新 WorkingMemory。
         """
-        command = mcp.executable_command
         if not command:
             print("Executor Error: No executable command found in MCP.")
             return mcp, working_memory

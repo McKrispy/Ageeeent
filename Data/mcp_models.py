@@ -5,7 +5,7 @@
 1. MCP (Memory-Context-Prompt): 任务全程传递的轻量级“任务简报”对象。
 2. 相关的数据模型，用于规范化 MCP 内部的数据，如执行历史记录等。
 """
-from typing import List, Dict, Any
+from typing import List, Dict, Any, ForwardRef
 from pydantic import BaseModel, Field
 import uuid
 
@@ -34,16 +34,31 @@ class MCP(BaseModel):
     这是一个轻量级的、贯穿任务全程的“任务简报”或“公文包”，以Python对象形式存在。
     它负责传递当前任务的状态、摘要和控制信息，以保持LLM prompt的精简。
     """
+
+    class ExecutableCommand(BaseModel):
+        id: str = Field(default_factory=lambda: f"ec_{uuid.uuid4()}", description="可执行命令的唯一ID。")
+        parent_sub_goal_id: str = Field(description="父子目标的ID。")
+        tool: str = Field(description="要使用的工具名称。")
+        params: Dict[str, Any] = Field(description="工具的参数。")
+
+    class SubGoal(BaseModel):
+        id: str = Field(default_factory=lambda: f"sg_{uuid.uuid4()}", description="子目标的唯一ID。")
+        parent_strategy_plan_id: str = Field(description="父战略计划的ID。")
+        description: str = Field(description="子目标的描述。")
+        executable_commands: List['MCP.ExecutableCommand'] = Field(default_factory=list, description="与此子目标关联的可执行命令列表。")
+
+    class StrategyPlan(BaseModel):
+        id: str = Field(default_factory=lambda: f"sp_{uuid.uuid4()}", description="战略计划的唯一ID。")
+        description: str = Field(description="战略计划的描述。")
+        sub_goals: List['MCP.SubGoal'] = Field(default_factory=list, description="与此战略计划关联的子目标列表。")
+
     session_id: str = Field(description="标识单次端到端对话的唯一ID。")
     global_cycle_count: int = Field(default=0, description="整个工作流的主循环次数。")
     
     user_requirements: str = Field(description="用户完整的原始需求文本。")
     
     # Plan & Study 阶段的产出
-    current_strategy_plan: List[str] = Field(default_factory=list, description="战略规划器输出的宏观步骤列表。")
-    current_subgoal: str = Field(default="", description="任务规划器当前正在处理的具体子目标。")
-    executable_command: Dict[str, Any] = Field(default_factory=dict, description="由任务规划器生成的、可直接执行的标准化命令。")
-    expected_data: Dict[str, Any] = Field(default_factory=dict, description="对当前子目标预期结果的数据规范，用于后续验证。")
+    strategy_plans: List[StrategyPlan] = Field(default_factory=list, description="战略规划器输出的宏观步骤列表。")
 
     # 新增：用于存储每个周期结束时 MCP 完整状态的 JSON 字符串列表
     cycle_history: List[str] = Field(default_factory=list, description="存储每个周期结束时 MCP 完整状态的 JSON 字符串列表。")
@@ -51,3 +66,7 @@ class MCP(BaseModel):
     class Config:
         """Pydantic model configuration."""
         validate_assignment = True
+
+# Pydantic v2 a little bit different for ForwardRef
+MCP.SubGoal.model_rebuild()
+MCP.StrategyPlan.model_rebuild()
