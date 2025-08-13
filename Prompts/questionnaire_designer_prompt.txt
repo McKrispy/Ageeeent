@@ -55,11 +55,10 @@ You MUST return a valid JSON object with the following structure. Do not include
 - **text**: Use for open-ended questions where users can type their response
 
 ## Question Design Rules:
-1. Create 5-8 questions that directly relate to the user's requirement
+1. Create 3-5 questions that directly relate to the user's requirement
 2. Use multiple choice when appropriate to make responses structured and analyzable
-3. Include at least one open-ended text question for additional context
-4. Ensure questions are clear, concise, and actionable
-5. Options should be comprehensive but not overwhelming (3-6 options per multiple choice)
+3. Ensure questions are clear, concise, and actionable
+4. Options should be comprehensive but not overwhelming (3-6 options per multiple choice)
 
 ## Example:
 **User Input**: "I want to learn how to become a successful stock investor"
