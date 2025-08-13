@@ -12,7 +12,7 @@ class LLMStrategyPlanner(BaseLLMEntity):
     """
     def process(self, mcp: MCP, strategies: StrategyData) -> MCP:
         """
-        读取用户需求和长期战略记忆，生成宏观战略计划并更新到 MCP.current_strategy_plan。
+        读取用户需求和长期战略记忆，生成宏观战略计划并更新到 MCP.strategy_plans。
         """
 
         print("LLMStrategyPlanner: Decomposing user requirements into a high-level strategy.")
@@ -26,9 +26,11 @@ class LLMStrategyPlanner(BaseLLMEntity):
         response = self.llm_interface.get_completion(prompt, model="gpt-4")
         
         if response:
-            plan = [line.split('.', 1)[-1].strip() for line in response.strip().split('\n') if line.strip()]
-            mcp.current_strategy_plan = plan
-            print(f"Generated strategy: {mcp.current_strategy_plan}")
+            plan_descriptions = [line.split('.', 1)[-1].strip() for line in response.strip().split('\n') if line.strip()]
+            
+            mcp.strategy_plans = [MCP.StrategyPlan(description=desc) for desc in plan_descriptions]
+            
+            print(f"Generated strategy plans: {[plan.description for plan in mcp.strategy_plans]}")
         else:
             print("Error: LLMStrategyPlanner received no response.")
         

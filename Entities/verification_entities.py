@@ -5,7 +5,7 @@
 """
 from abc import ABC, abstractmethod
 import uuid
-from Data.mcp_models import MCP, EntityStatus
+from Data.mcp_models import MCP, WorkingMemory
 from Entities.base_llm_entity import BaseLLMEntity
 from Interfaces.llm_api_interface import LLMAPIInterface
 
@@ -22,32 +22,32 @@ class BaseVerificationEntity(BaseLLMEntity):
         return ""
 
     @abstractmethod
-    def verify(self, mcp: MCP) -> bool:
+    def verify(self, mcp: MCP, working_memory: WorkingMemory = None) -> bool:
         """
         执行验证逻辑。
         """
         pass
 
-    def process(self, mcp: MCP) -> MCP:
+    def process(self, mcp: MCP, working_memory: WorkingMemory = None) -> MCP:
         """
         process方法调用verify，以适应通用实体接口。
         """
-        self.verify(mcp)
+        self.verify(mcp, working_memory)
         return mcp
 
 class PredictionVerification(BaseVerificationEntity):
     """
     预测验证 - 进行战术层面的快速验证。
     """
-    def verify(self, mcp: MCP) -> bool:
+    def verify(self, mcp: MCP, working_memory: WorkingMemory) -> bool:
         """
-        比较 MCP.expected_data 和 MCP.working_memory 中的摘要。
+        比较 MCP.expected_data 和 WorkingMemory 中的摘要。
         """
 
         print("PredictionVerification: Verifying if the execution result meets the expected data schema.")
         
-        # 简化逻辑：检查 working_memory 是否为空
-        is_met = bool(mcp.working_memory) 
+        # 简化逻辑：检查 working_memory 是否非空
+        is_met = bool(working_memory.data) 
         
         if is_met:
             print("PredictionVerification: Result MET expected schema.")
@@ -60,15 +60,15 @@ class RequirementsVerification(BaseVerificationEntity):
     """
     需求验证 - 进行战略层面的深度验证。
     """
-    def verify(self, mcp: MCP) -> bool:
+    def verify(self, mcp: MCP, working_memory: WorkingMemory = None) -> bool:
         """
-        在所有步骤完成后，比较 MCP.user_requirements 和 MCP.execution_history。
+        在所有步骤完成后，比较 MCP.user_requirements 和 mcp.cycle_history。
         """
 
         print("RequirementsVerification: Verifying if the accumulated results meet the user's requirements.")
         
-        # 简化逻辑：检查 execution_history 是否为空
-        is_met = bool(mcp.execution_history)
+        # 简化逻辑：检查 cycle_history 是否为空
+        is_met = bool(mcp.cycle_history)
         
         if is_met:
             print("RequirementsVerification: Final requirements MET. Task successful.")

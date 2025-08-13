@@ -5,7 +5,7 @@
 from Data.mcp_models import MCP, WorkingMemory
 from Data.strategies import StrategyData
 from Interfaces.llm_api_interface import OpenAIInterface
-from Interfaces.database_interface import RedisClient  # 更改导入
+from Interfaces.database_interface import RedisClient
 from Entities.strategy_planner import LLMStrategyPlanner
 from Entities.task_planner import LLMTaskPlanner
 from Entities.filter_summary import LLMFilterSummary
@@ -19,7 +19,7 @@ class AgentWorkflow:
     """
     def __init__(self, user_requirements: str, session_id: str):
         self.mcp = MCP(user_requirements=user_requirements, session_id=session_id)
-        self.working_memory = WorkingMemory(session_id=session_id)
+        self.working_memory = WorkingMemory()
         self.strategies = StrategyData()
 
         # 初始化所有接口
@@ -33,7 +33,6 @@ class AgentWorkflow:
         """
         print(f"--- Starting Agent Workflow for Session ID: {self.mcp.session_id} ---")
         print(f"User Requirements: {self.mcp.user_requirements}")
-        self.db_interface.connect()
 
         # 1. 初始战略规划
         strategy_planner = LLMStrategyPlanner(self.llm_interface)
