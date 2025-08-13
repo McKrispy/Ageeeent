@@ -5,20 +5,11 @@
             "params": {
                 "entries": [
                     {
-                        "keywords": [
-                            "2030",
-                            "中国",
-                            "人口",
-                            "预测"
-                        ],
+                        "keywords": ["2030", "中国", "人口", "预测"],
                         "num_results": 3
                     },
                     {
-                        "keywords": [
-                            "2025",
-                            "中国",
-                            "人口"
-                        ],
+                        "keywords": ["2025", "中国", "人口"],
                         "num_results": 3
                     }
                 ]
