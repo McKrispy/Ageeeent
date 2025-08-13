@@ -1,0 +1,38 @@
+{
+    "title": "User Profile Analysis Questionnaire",
+    "description": "Please answer the following questions to help us understand your programming experience and preferences.",
+    "questions": [
+        {
+            "question": "How would you rate your current knowledge and experience in programming?",
+            "type": "single_choice",
+            "options": [
+                "Beginner",
+                "Intermediate",
+                "Expert"
+            ]
+        },
+        {
+            "question": "Have you ever used following tools or platforms for programming?",
+            "type": "multiple_choice",
+            "options": [
+                "Anaconda",
+                "Jupyter Notebook",
+                "PyCharm",
+                "VSCode",
+                "Cursor",
+                "Other"
+            ]
+        },
+        {
+            "question": "How long do you want to spend on programming each day?",
+            "type": "single_choice",
+            "options": [
+                "1 hour",
+                "2 hours",
+                "3 hours",
+                "4 hours",
+                "5 hours"
+            ]
+        }
+    ]
+}
