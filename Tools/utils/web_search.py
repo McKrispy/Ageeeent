@@ -6,7 +6,7 @@ import json
 
 from Interfaces.llm_api_interface import OpenAIInterface
 from Tools.utils.base_tool import BaseTool
-from Data.mcp_models import MCP
+from Data.mcp_models import MCP, ExecutableCommand
 from Interfaces.database_interface import RedisClient
 from Entities.filter_summary import LLMFilterSummary
 
@@ -26,13 +26,16 @@ class WebSearchTool(BaseTool):
         else:
             print(f"WebSearchTool: Database interface connected with host: {self.db_interface.host}, port: {self.db_interface.port}, db: {self.db_interface.db}")
 
-    def execute(self, mcp: MCP, keywords: list, num_results: int = 3, **kwargs) -> dict:
+    def execute(self, mcp: MCP, executable_command: ExecutableCommand, **kwargs) -> dict:
         """
         执行完整的搜索、存储和摘要流程。
         :param keywords: 搜索关键词列表。
         :param num_results: 需要返回的搜索结果数量。
         :return: 一个包含 'summary' 和 'data_key' 的字典。
         """
+        keywords = executable_command.params.get("keywords")
+        num_results = executable_command.params.get("num_results")
+
         # 1. 执行搜索并获取原始内容
         content_results = self._search_and_extract(keywords, num_results)
         
@@ -40,7 +43,6 @@ class WebSearchTool(BaseTool):
         raw_data_str = json.dumps(content_results, indent=2)
 
         # 2. 生成唯一的 Redis 键
-        # 格式: session_id:global_cycle_count:tool_id:instance_id
         data_key = f"{mcp.session_id}:{mcp.global_cycle_count}:{self.tool_id}:{self.instance_id}"
         
         # 3. 将原始数据存入 Redis
