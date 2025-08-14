@@ -18,7 +18,7 @@ class BaseTool(ABC):
             raise TypeError("llm_summarizer must be an instance of LLMFilterSummary")
 
         self.tool_id: str = self.__class__.__name__
-        self.instance_id: str = f"{self.tool_id}_{uuid.uuid4()}"
+        self.instance_id: str = uuid.uuid4()
         self.db_interface = db_interface
         self.llm_summarizer = llm_summarizer
 

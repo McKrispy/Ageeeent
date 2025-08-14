@@ -9,12 +9,10 @@ from typing import List, Dict, Any
 from pydantic import BaseModel, Field
 import uuid
 
-
 class CompletionRequirement(BaseModel):
     original_input: str = Field(description="用户的原始输入。")
     supplementary_content: str = Field(description="用户根据问题补充的内容。")
     profile_analysis: str = Field(description="根据前两者分析出的用户画像。")
-
 
 class StrategyPlan(BaseModel):
     id: str = Field(default_factory=lambda: f"sp_{uuid.uuid4()}", description="战略计划的唯一ID。")
