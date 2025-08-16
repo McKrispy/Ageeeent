@@ -59,6 +59,7 @@ class ToolExecutor:
                     print(f"Executor Error: Failed to execute command: {cmd}")
                     return False
             
+        return True
 
     def _execute_single_cmd(self, mcp: MCP, cmd: ExecutableCommand):
         """

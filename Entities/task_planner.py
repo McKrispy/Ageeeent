@@ -31,7 +31,6 @@ class LLMTaskPlanner(BaseLLMEntity):
             
             response = self.llm_interface.get_completion(
                 prompt, 
-                model="gpt-4-turbo", 
                 response_format={"type": "json_object"}
             )
             
