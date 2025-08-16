@@ -47,7 +47,7 @@ class OpenAIInterface(LLMAPIInterface):
         self.client = OpenAI(api_key=api_key, base_url=base_url)
 
     
-    def get_completion(self, prompt: str, model: str = "gpt-4", **kwargs) -> str:
+    def get_completion(self, prompt: str, model: str = "gpt-4o-mini", **kwargs) -> str:
         """
         使用 OpenAI API 获取文本补全。
 

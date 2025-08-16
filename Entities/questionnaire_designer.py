@@ -2,12 +2,13 @@ from Entities.base_llm_entity import BaseLLMEntity
 from Data.mcp_models import MCP
 from Interfaces.llm_api_interface import OpenAIInterface
 from Interfaces.database_interface import RedisClient
+import json
 
 class QuestionnaireDesigner(BaseLLMEntity):
     def __init__(self, llm_interface, db_interface, entity_id=None):
         super().__init__(llm_interface, db_interface, entity_id)
 
-    def process(self, mcp: MCP) -> str:
+    def process(self, mcp: MCP) -> dict:
         """
         处理原始数据，生成摘要。
         :param mcp: MCP对象，用于状态更新。
@@ -24,10 +25,12 @@ class QuestionnaireDesigner(BaseLLMEntity):
         # 限制输入长度，防止超出模型限制
         prompt = self.prompt_template.replace('{{user_requirement}}', str(mcp.user_requirements)[:8000])
         
-        questionnaire = self.llm_interface.get_completion(prompt, model="gpt-3.5-turbo")
+        questionnaire_str = self.llm_interface.get_completion(prompt, response_format={"type": "json_object"})
+
+        questionnaire = json.loads(questionnaire_str)
         
         if questionnaire:
-            print(f"Generated questionnaire: {questionnaire}")
+            print(f"Generated questionnaire: {questionnaire} based on user requirement: {mcp.user_requirements}")
         else:
             print("Error: QuestionnaireDesigner received no response.")
             questionnaire = "Error: QuestionnaireDesigner received no response." 
@@ -35,7 +38,7 @@ class QuestionnaireDesigner(BaseLLMEntity):
         return questionnaire
 
 if __name__ == "__main__":
-    mcp = MCP(session_id="test", user_requirements="How to program in python")
+    mcp = MCP(session_id="test", user_requirements="如何填高考志愿")
     llm_interface = OpenAIInterface()
     db_interface = RedisClient()
     questionnaire_designer = QuestionnaireDesigner(llm_interface, db_interface)

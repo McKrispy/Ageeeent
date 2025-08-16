@@ -86,9 +86,3 @@ class WebSearchTool(BaseTool):
                     print(f"WebSearchTool: Failed to fetch {url}: {e}")
         return results
     
-if __name__ == "__main__":
-    db_interface = RedisClient()
-    llm_interface = OpenAIInterface()
-    llm_summarizer = LLMFilterSummary(llm_interface, db_interface, "test_filter_summary")
-    web_search_tool = WebSearchTool(db_interface, llm_summarizer)
-    web_search_tool.execute(["python", "programming"])

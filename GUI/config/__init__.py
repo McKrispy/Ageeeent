@@ -1,1 +1,1 @@
-# Config Package
+# GUI配置包
