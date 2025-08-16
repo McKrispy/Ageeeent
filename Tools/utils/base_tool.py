@@ -4,7 +4,7 @@ import uuid
 
 from Interfaces.database_interface import RedisClient
 from Entities.filter_summary import LLMFilterSummary
-from Data.mcp_models import MCP, WorkingMemory
+from Data.mcp_models import MCP, WorkingMemory, ExecutableCommand
 
 class BaseTool(ABC):
     """
@@ -23,7 +23,7 @@ class BaseTool(ABC):
         self.llm_summarizer = llm_summarizer
 
     @abstractmethod
-    def execute(self, mcp: MCP, **kwargs) -> dict:
+    def execute(self, mcp: MCP, executable_command: ExecutableCommand, **kwargs) -> dict:
         """
         执行工具的具体逻辑。
         子类必须实现此方法。

@@ -63,7 +63,6 @@ class MCP(BaseModel):
     user_requirements: str = Field(description="用户完整的原始需求文本。")
     completion_requirement: CompletionRequirement = Field(default=None, description="经过处理和分析的完整用户需求。")
     
-    # --- 扁平化的层级数据结构 ---
     strategy_plans: List[StrategyPlan] = Field(default_factory=list, description="所有战略计划的扁平列表。")
     sub_goals: List[SubGoal] = Field(default_factory=list, description="所有子目标的扁平列表。")
     executable_commands: List[ExecutableCommand] = Field(default_factory=list, description="所有可执行命令的扁平列表。")

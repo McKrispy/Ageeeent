@@ -23,7 +23,7 @@ class LLMStrategyPlanner(BaseLLMEntity):
 
         prompt = self.prompt_template.replace('{{user_requirements}}', prompt_input)
         
-        response = self.llm_interface.get_completion(prompt, model="gpt-4")
+        response = self.llm_interface.get_completion(prompt)
         
         if response:
             plan_descriptions = [line.split('.', 1)[-1].strip() for line in response.strip().split('\n') if line.strip()]
