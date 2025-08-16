@@ -225,13 +225,15 @@ def render_main_content():
         # 显示最新日志
         logs = logger.get_all_logs()
         if logs:
-            # 创建可滚动的日志列表
-            st.subheader(f"📋 日志记录 ({len(logs)} 条)")
+            # 只显示最近5个日志
+            recent_logs = logs[-5:] if len(logs) > 5 else logs
             
-            # 使用 st.expander 创建可滚动的日志容器
-            with st.expander("📋 查看日志详情", expanded=True):
-                # 在 expander 内显示所有日志
-                for i, log in enumerate(logs):
+            st.subheader(f"📋 日志记录 (最近 {len(recent_logs)} 条，共 {len(logs)} 条)")
+            
+            # 使用 st.expander
+            with st.expander("📋 查看日志详情", expanded=False):
+                # 在 expander 内显示最近5个日志
+                for i, log in enumerate(recent_logs):
                     timestamp = time.strftime("%H:%M:%S", time.localtime(log["timestamp"]))
                     phase = log.get("phase", "unknown")
                     message = log['message']
@@ -254,30 +256,38 @@ def render_main_content():
                             st.info(f"[{phase}] {message}")
                     
                     # 添加分隔线（除了最后一条）
-                    if i < len(logs) - 1:
+                    if i < len(recent_logs) - 1:
                         st.divider()
                 
                 # 显示日志统计信息
-                st.caption(f"共 {len(logs)} 条日志记录")
+                st.caption(f"显示最近 {len(recent_logs)} 条日志，共 {len(logs)} 条记录")
+                
+                # 如果有更多日志，显示查看全部选项
+                if len(logs) > 5:
+                    if st.button("📋 查看全部日志", use_container_width=True):
+                        # 这里可以添加展开显示全部日志的逻辑
+                        st.info("功能开发中：可以在这里展开显示全部日志")
         else:
             st.info("暂无日志")
         
         # 日志控制
         st.markdown("---")
-        if st.button("🔄 清空日志", use_container_width=True):
-            logger.clear_logs()
-            st.rerun()
+        col_clear, col_export = st.columns(2)
         
-        if st.button("📥 导出日志", use_container_width=True):
-            logs_text = logger.export_logs("text")
-            st.download_button(
-                label="下载日志文件",
-                data=logs_text,
-                file_name=f"workflow_logs_{int(time.time())}.txt",
-                mime="text/plain"
-            )
-    
-    # 自动刷新（如果工作流正在运行）
-    if workflow_status["is_running"]:
-        time.sleep(2)  # 等待2秒
-        st.rerun()
+        with col_clear:
+            if st.button("🔄 清空日志", use_container_width=True):
+                logger.clear_logs()
+                
+        
+        with col_export:
+            if st.button("📥 导出日志", use_container_width=True):
+                logs_text = logger.export_logs("text")
+                st.download_button(
+                    label="下载日志文件",
+                    data=logs_text,
+                    file_name=f"workflow_logs_{int(time.time())}.txt",
+                    mime="text/plain"
+                )
+        
+        time.sleep(1)  # 等待1秒
+            

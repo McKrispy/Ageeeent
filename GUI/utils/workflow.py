@@ -4,12 +4,11 @@
 import asyncio
 import threading
 import time
-import json
 from typing import Optional, Callable
 from GUI.utils.logger import WorkflowLogger
 
 # 导入工作流所需的模块
-from Data.mcp_models import MCP, WorkingMemory
+from Data.mcp_models import MCP, WorkingMemory, StrategyPlan, SubGoal, ExecutableCommand
 from Data.strategies import StrategyData
 from Interfaces.llm_api_interface import OpenAIInterface
 from Interfaces.database_interface import RedisClient
@@ -22,7 +21,7 @@ from Tools.executor import ToolExecutor
 from Tools.tool_registry import ToolRegistry
 
 class AsyncWorkflowManager:
-    """异步工作流管理器"""
+    """工作流管理器"""
     
     def __init__(self):
         self.workflow_task: Optional[asyncio.Task] = None
@@ -36,10 +35,20 @@ class AsyncWorkflowManager:
         self.mcp: Optional[MCP] = None
         self.working_memory: Optional[WorkingMemory] = None
         self.strategies: Optional[StrategyData] = None
-        self.db_interface: Optional[RedisClient] = None
         self.waiting_for_supplementary = False
         self.questionnaire_data = None
         self.supplementary_info = None
+        
+        # 初始化接口和实体（延迟初始化）
+        self.llm_interface: Optional[OpenAIInterface] = None
+        self.db_interface: Optional[RedisClient] = None
+        self.questionnaire_designer: Optional[QuestionnaireDesigner] = None
+        self.profile_drawer: Optional[ProfileDrawer] = None
+        self.strategy_planner: Optional[LLMStrategyPlanner] = None
+        self.task_planner: Optional[LLMTaskPlanner] = None
+        self.filter_summary: Optional[LLMFilterSummary] = None
+        self.executor: Optional[ToolExecutor] = None
+        self.tool_registry: Optional[ToolRegistry] = None
     
     def start_workflow(self, user_input: str, progress_callback: Optional[Callable] = None):
         """启动工作流"""
@@ -94,7 +103,7 @@ class AsyncWorkflowManager:
             if not self._check_stop_and_log("Initialization", "1.1-1.2: 初始化LLM接口和数据库接口..."):
                 return False
             
-            llm_interface = OpenAIInterface()
+            self.llm_interface = OpenAIInterface()
             self.db_interface = RedisClient()
             self.logger.add_log("Initialization", "✅ LLM接口和数据库接口初始化完成", "success")
             
@@ -111,20 +120,20 @@ class AsyncWorkflowManager:
             if not self._check_stop_and_log("Initialization", "1.4: 初始化LLM实体..."):
                 return False
             
-            questionnaire_designer = QuestionnaireDesigner(llm_interface, self.db_interface)
-            profile_drawer = ProfileDrawer(llm_interface, self.db_interface)
-            strategy_planner = LLMStrategyPlanner(llm_interface)
-            task_planner = LLMTaskPlanner(llm_interface)
-            filter_summary = LLMFilterSummary(llm_interface)
+            self.questionnaire_designer = QuestionnaireDesigner(self.llm_interface, self.db_interface)
+            self.profile_drawer = ProfileDrawer(self.llm_interface, self.db_interface)
+            self.strategy_planner = LLMStrategyPlanner(self.llm_interface, self.db_interface)
+            self.task_planner = LLMTaskPlanner(self.llm_interface, self.db_interface)
+            self.filter_summary = LLMFilterSummary(self.llm_interface, self.db_interface)
             self.logger.add_log("Initialization", "✅ 所有LLM实体初始化完成", "success")
             
             # 1.5: 初始化工具注册表
-            executor = ToolExecutor(self.db_interface, LLMFilterSummary(llm_interface))
             if not self._check_stop_and_log("Initialization", "1.5: 初始化工具注册表..."):
                 return False
             
-            tool_registry = ToolRegistry()
-            available_tools = tool_registry.list_tools()
+            self.executor = ToolExecutor(self.db_interface, self.filter_summary)
+            self.tool_registry = ToolRegistry()
+            available_tools = self.tool_registry.list_tools()
             self.logger.add_log("Initialization", f"✅ 工具注册表初始化完成，可用工具: {available_tools}", "success")
             
             # ==================== 第2条：接收用户原始输入 ====================
@@ -138,10 +147,9 @@ class AsyncWorkflowManager:
             if not self._check_stop_and_log("Questionnaire Designer", "第3条：questionnaire_designer生成问题"):
                 return False
             
-            questionnaire = questionnaire_designer.process(self.mcp)
+            questionnaire = self.questionnaire_designer.process(self.mcp)
             self.logger.add_log("Questionnaire Designer", f"生成的问题清单:\n{questionnaire}", "info")
             
-            # 存储问卷数据并等待用户回答
             self.questionnaire_data = questionnaire
             self.waiting_for_supplementary = True
             self.logger.add_log("Questionnaire Designer", "⏳ 等待用户完成问卷...", "info")
@@ -152,7 +160,7 @@ class AsyncWorkflowManager:
             if not self._check_stop_and_log("Profile Drawer", "第4条：profile_drawer分析用户画像"):
                 return False
             
-            self.mcp = profile_drawer.process(self.mcp, supplementary_info)
+            self.mcp = self.profile_drawer.process(self.mcp, supplementary_info)
             
             if self.mcp.completion_requirement:
                 self.logger.add_log("Profile Drawer", f"用户画像: {self.mcp.completion_requirement.profile_analysis}", "info")
@@ -169,10 +177,8 @@ class AsyncWorkflowManager:
             if not self._check_stop_and_log("Strategy Planner", "第6条：strategy_planner生成战略计划"):
                 return False
             
-            self.mcp = strategy_planner.process(self.mcp, self.strategies)
-            
-            for i, plan in enumerate(self.mcp.strategy_plans, 1):
-                self.logger.add_log("Strategy Planner", f"{i}. {plan.description}", "info")
+            self.mcp = self.strategy_planner.process(self.mcp, self.strategies)
+            # self.mcp.strategy_plans = [StrategyPlan(description="Find out how to program in python")]
             
             self.logger.add_log("Strategy Planner", f"✅ 战略计划生成完成 ({len(self.mcp.strategy_plans)}个计划)", "success")
             
@@ -180,7 +186,15 @@ class AsyncWorkflowManager:
             if not self._check_stop_and_log("Task Planner", "第7条：task_planner生成子目标和执行命令"):
                 return False
             
-            self.mcp = task_planner.process(self.mcp, self.strategies)
+            self.mcp = self.task_planner.process(self.mcp, self.strategies)
+            # self.mcp.sub_goals = [SubGoal(parent_strategy_plan_id=self.mcp.strategy_plans[0].id, description="Find out how to program in python", is_completed=False)]
+            # self.mcp.executable_commands = [ExecutableCommand(parent_sub_goal_id=self.mcp.sub_goals[0].id, tool="web_search", params={"keywords": ["python", "programming"], "num_results": 5}, is_completed=False),
+            #                                 ExecutableCommand(parent_sub_goal_id=self.mcp.sub_goals[0].id, tool="web_search", params={"keywords": ["python", "programming", "anaconda"], "num_results": 5}, is_completed=False),
+            #                                 ExecutableCommand(parent_sub_goal_id=self.mcp.sub_goals[0].id, tool="web_search", params={"keywords": ["python", "programming", "jupyter"], "num_results": 5}, is_completed=False),
+            #                                 ExecutableCommand(parent_sub_goal_id=self.mcp.sub_goals[0].id, tool="web_search", params={"keywords": ["python", "programming", "jupyter"], "num_results": 5}, is_completed=False),
+            #                                 ExecutableCommand(parent_sub_goal_id=self.mcp.sub_goals[0].id, tool="web_search", params={"keywords": ["python", "programming", "jupyter"], "num_results": 5}, is_completed=False)
+            # ]
+
             
             self.logger.add_log("Task Planner", f"✅ 子目标和执行命令生成完成 ({len(self.mcp.sub_goals)}个子目标, {len(self.mcp.executable_commands)}个命令)", "success")
             
@@ -188,7 +202,7 @@ class AsyncWorkflowManager:
             if not self._check_stop_and_log("Execution", "第8条：执行命令"):
                 return False
             
-            is_executed = executor.execute(self.mcp, self.working_memory)
+            is_executed = self.executor.execute(self.mcp, self.working_memory)
             if not is_executed:
                 self.logger.add_log("Execution", "❌ 执行命令失败", "error")
                 return False
@@ -260,9 +274,9 @@ class AsyncWorkflowManager:
             return {}
         
         return {
-            "strategy_plans": len(self.mcp.strategy_plans),
-            "sub_goals": len(self.mcp.sub_goals),
-            "executable_commands": len(self.mcp.executable_commands),
+            "strategy_plans": len(self.mcp.strategy_plans) if self.mcp.strategy_plans else 0,
+            "sub_goals": len(self.mcp.sub_goals) if self.mcp.sub_goals else 0,
+            "executable_commands": len(self.mcp.executable_commands) if self.mcp.executable_commands else 0,
             "mcp": self.mcp,
             "working_memory": self.working_memory,
             "strategies": self.strategies

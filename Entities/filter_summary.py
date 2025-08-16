@@ -38,12 +38,3 @@ class LLMFilterSummary(BaseLLMEntity):
             summary = "" #确保返回字符串
         
         return summary
-    
-if __name__ == "__main__":
-    mcp = MCP(session_id="test", user_requirements="How to program in python")
-    raw_data = "Python is a versatile programming language. It is widely used for web development, data analysis, and artificial intelligence."
-    llm_interface = OpenAIInterface()
-    db_interface = RedisClient()
-    llm_filter_summary = LLMFilterSummary(llm_interface, db_interface, "test_filter_summary")
-    summary = llm_filter_summary.process(mcp, raw_data)
-    print(summary)

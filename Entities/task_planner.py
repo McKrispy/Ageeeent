@@ -3,9 +3,11 @@
 任务规划器 (How) - 进行精细的战术规划。
 """
 import json
-from Data.mcp_models import MCP, SubGoal, ExecutableCommand
+from Data.mcp_models import MCP, SubGoal, ExecutableCommand, StrategyPlan
 from Data.strategies import StrategyData
 from Entities.base_llm_entity import BaseLLMEntity
+from Interfaces.llm_api_interface import OpenAIInterface
+from Interfaces.database_interface import RedisClient
 
 class LLMTaskPlanner(BaseLLMEntity):
     """
@@ -60,3 +62,14 @@ class LLMTaskPlanner(BaseLLMEntity):
                 print(f"Error: Failed to decode JSON from LLMTaskPlanner. Response:\n{response}")
                 
         return mcp
+
+if __name__ == "__main__":
+    llm_interface = OpenAIInterface()
+    llm_task_planner = LLMTaskPlanner(llm_interface)
+    db = RedisClient()
+    mcp = MCP(session_id="1234567890", user_requirements="How to make a cake", strategy_plans=[StrategyPlan(description="Make a cake")])
+    strategies = StrategyData(execution_policy=["You are a helpful assistant that can help me make a cake."])
+    mcp = llm_task_planner.process(mcp, strategies)
+    print(mcp.sub_goals)
+    print(mcp.executable_commands)
+    
