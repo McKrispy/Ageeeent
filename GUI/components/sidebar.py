@@ -34,9 +34,9 @@ def render_sidebar():
         google_model = st.selectbox("Google Model", google_model_list, index = google_model_list.index(google_config['model']))
         anthropic_model = st.selectbox("Anthropic Model", anthropic_model_list, index = anthropic_model_list.index(anthropic_config['model']))
         
-        openai_base_url = st.text_input("OpenAI Base URL", value="https://api.openai.com/v1")
-        google_base_url = st.text_input("Google Base URL", value="https://api.google.com/v1")
-        anthropic_base_url = st.text_input("Anthropic Base URL", value="https://api.anthropic.com/v1")
+        openai_base_url = st.text_input("OpenAI Base URL", value=openai_config['base_url'])
+        google_base_url = st.text_input("Google Base URL", value=google_config['base_url'])
+        anthropic_base_url = st.text_input("Anthropic Base URL", value=anthropic_config['base_url'])
 
         temperature = st.slider("Temperature", 0.0, 1.0, float(general_config['temperature']), 0.1)
         max_tokens = st.slider("Max Tokens", 100, 8000, int(general_config['max_tokens']), 100)

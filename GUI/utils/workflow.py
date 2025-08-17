@@ -41,7 +41,7 @@ class AsyncWorkflowManager:
         self.supplementary_info = None
         
         # 初始化接口和实体（延迟初始化）
-        self.llm_interface: Optional[OpenAIInterface] = None
+        self.llm_interface: Optional[OpenAIInterface | GoogleCloudInterface | AnthropicInterface] = None
         self.db_interface: Optional[RedisClient] = None
         self.questionnaire_designer: Optional[QuestionnaireDesigner] = None
         self.profile_drawer: Optional[ProfileDrawer] = None
@@ -77,6 +77,9 @@ class AsyncWorkflowManager:
         
         self.should_stop = True
         self.is_running = False
+        self.questionnaire_data = None
+        self.supplementary_info = None
+        self.waiting_for_supplementary = False
         
         # 等待工作流线程结束
         if self.workflow_thread and self.workflow_thread.is_alive():
@@ -187,7 +190,6 @@ class AsyncWorkflowManager:
                 return False
             
             self.mcp = self.strategy_planner.process(self.mcp, self.strategies)
-            # self.mcp.strategy_plans = [StrategyPlan(description="Find out how to program in python")]
             
             self.logger.add_log("Strategy Planner", f"✅ 战略计划生成完成 ({len(self.mcp.strategy_plans)}个计划)", "success")
             
@@ -196,15 +198,7 @@ class AsyncWorkflowManager:
                 return False
             
             self.mcp = self.task_planner.process(self.mcp, self.strategies)
-            # self.mcp.sub_goals = [SubGoal(parent_strategy_plan_id=self.mcp.strategy_plans[0].id, description="Find out how to program in python", is_completed=False)]
-            # self.mcp.executable_commands = [ExecutableCommand(parent_sub_goal_id=self.mcp.sub_goals[0].id, tool="web_search", params={"keywords": ["python", "programming"], "num_results": 5}, is_completed=False),
-            #                                 ExecutableCommand(parent_sub_goal_id=self.mcp.sub_goals[0].id, tool="web_search", params={"keywords": ["python", "programming", "anaconda"], "num_results": 5}, is_completed=False),
-            #                                 ExecutableCommand(parent_sub_goal_id=self.mcp.sub_goals[0].id, tool="web_search", params={"keywords": ["python", "programming", "jupyter"], "num_results": 5}, is_completed=False),
-            #                                 ExecutableCommand(parent_sub_goal_id=self.mcp.sub_goals[0].id, tool="web_search", params={"keywords": ["python", "programming", "jupyter"], "num_results": 5}, is_completed=False),
-            #                                 ExecutableCommand(parent_sub_goal_id=self.mcp.sub_goals[0].id, tool="web_search", params={"keywords": ["python", "programming", "jupyter"], "num_results": 5}, is_completed=False)
-            # ]
 
-            
             self.logger.add_log("Task Planner", f"✅ 子目标和执行命令生成完成 ({len(self.mcp.sub_goals)}个子目标, {len(self.mcp.executable_commands)}个命令)", "success")
             
             # ==================== 第8条：执行命令 ====================
