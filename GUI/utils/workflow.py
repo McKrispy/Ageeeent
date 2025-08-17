@@ -77,6 +77,9 @@ class AsyncWorkflowManager:
         
         self.should_stop = True
         self.is_running = False
+        self.questionnaire_data = None
+        self.supplementary_info = None
+        self.waiting_for_supplementary = False
         
         # 等待工作流线程结束
         if self.workflow_thread and self.workflow_thread.is_alive():

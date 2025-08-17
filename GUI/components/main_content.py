@@ -55,6 +55,7 @@ def render_question(question_data: dict, question_index: int) -> str:
         st.warning(f"不支持的问题类型: {question_type}")
         return ""
 
+@st.fragment(run_every="1s")
 def render_questionnaire_section(workflow_manager):
     """渲染问卷部分"""
     st.markdown("---")
@@ -110,9 +111,6 @@ def render_questionnaire_section(workflow_manager):
                             result = workflow_manager._manage_questionnaire_interaction("submit", supplementary_info)
                             if result == "success":
                                 st.success("✅ 问卷答案已提交！工作流将继续执行...")
-                                # 清除快速补充状态
-                                if 'quick_supplement' in st.session_state:
-                                    del st.session_state.quick_supplement
                                 st.rerun()
                             else:
                                 st.error("❌ 提交失败，请重试")
@@ -124,6 +122,7 @@ def render_questionnaire_section(workflow_manager):
     else:
         st.info("当前无需填写问卷")
 
+@st.fragment(run_every="1s")
 def render_workflow_status(workflow_manager):
     """渲染工作流状态"""
     st.markdown("---")
@@ -151,6 +150,69 @@ def render_workflow_status(workflow_manager):
         results = workflow_status.get("results", {})
         total_items = results.get("strategy_plans", 0) + results.get("sub_goals", 0) + results.get("executable_commands", 0)
         st.metric("生成项目", total_items)
+
+@st.fragment(run_every="1s")
+def render_logs_section(workflow_manager):
+    """渲染日志部分"""
+    st.markdown("---")
+    st.subheader("📋 后台日志")
+    # 获取工作流状态
+    workflow_status = workflow_manager.get_status()
+    logger = workflow_status["logger"]
+    
+    # 显示工作流状态
+    status_color = "🟢" if workflow_status["is_running"] else "🔴"
+    st.metric("状态", f"{status_color} {'运行中' if workflow_status['is_running'] else '已停止'}")
+    
+    summary = logger.get_summary()
+    st.metric("日志数量", summary["total_logs"])
+    
+    # 显示最新日志
+    logs = logger.get_all_logs()
+    if logs:
+        st.subheader(f"📋 日志记录 (共 {len(logs)} 条)")
+        # 使用 st.expander
+        with st.expander("📋 查看日志详情", expanded=False):
+            with st.container(height=500):
+                for log in logs:
+                    timestamp = time.strftime("%H:%M:%S", time.localtime(log["timestamp"]))
+                    phase = log.get("phase", "unknown")
+                    message = log['message']
+                    
+                    full_message = f"[{timestamp}] [{phase}] {message}"
+                    
+                    if log["type"] == "success":
+                        st.success(full_message)
+                    elif log["type"] == "error":
+                        st.error(full_message)
+                    elif log["type"] == "warning":
+                        st.warning(full_message)
+                    else:
+                        st.info(full_message)
+            
+            # 显示日志统计信息
+            st.caption(f"共 {len(logs)} 条记录")
+            
+    else:
+        st.info("暂无日志")
+    
+    # 日志控制
+    st.markdown("---")
+    col_clear, col_export = st.columns(2)
+    
+    with col_clear:
+        if st.button("🔄 清空日志", use_container_width=True):
+            logger.clear_logs()
+            
+    with col_export:
+        if st.button("📥 导出日志", use_container_width=True):
+            logs_text = logger.export_logs("text")
+            st.download_button(
+                label="下载日志文件",
+                data=logs_text,
+                file_name=f"workflow_logs_{int(time.time())}.txt",
+                mime="text/plain"
+            )
 
 def render_main_content():
     """渲染主内容区域 - 聊天界面"""
@@ -210,66 +272,5 @@ def render_main_content():
         render_workflow_status(workflow_manager)
     
     with col2:
-        st.header("📋 后台日志")
-        
-        # 获取工作流状态
-        workflow_status = workflow_manager.get_status()
-        logger = workflow_status["logger"]
-        
-        # 显示工作流状态
-        status_color = "🟢" if workflow_status["is_running"] else "🔴"
-        st.metric("状态", f"{status_color} {'运行中' if workflow_status['is_running'] else '已停止'}")
-        
-        summary = logger.get_summary()
-        st.metric("日志数量", summary["total_logs"])
-        
-        # 显示最新日志
-        logs = logger.get_all_logs()
-        if logs:
-            st.subheader(f"📋 日志记录 (共 {len(logs)} 条)")
-            # 使用 st.expander
-            with st.expander("📋 查看日志详情", expanded=False):
-                with st.container(height=500):
-                    for i, log in enumerate(logs):
-                        timestamp = time.strftime("%H:%M:%S", time.localtime(log["timestamp"]))
-                        phase = log.get("phase", "unknown")
-                        message = log['message']
-                        
-                        full_message = f"[{timestamp}] [{phase}] {message}"
-                        
-                        if log["type"] == "success":
-                            st.success(full_message)
-                        elif log["type"] == "error":
-                            st.error(full_message)
-                        elif log["type"] == "warning":
-                            st.warning(full_message)
-                        else:
-                            st.info(full_message)
-                
-                # 显示日志统计信息
-                st.caption(f"共 {len(logs)} 条记录")
-                
-        else:
-            st.info("暂无日志")
-        
-        # 日志控制
-        st.markdown("---")
-        col_clear, col_export = st.columns(2)
-        
-        with col_clear:
-            if st.button("🔄 清空日志", use_container_width=True):
-                logger.clear_logs()
-                
-        
-        with col_export:
-            if st.button("📥 导出日志", use_container_width=True):
-                logs_text = logger.export_logs("text")
-                st.download_button(
-                    label="下载日志文件",
-                    data=logs_text,
-                    file_name=f"workflow_logs_{int(time.time())}.txt",
-                    mime="text/plain"
-                )
-        
-        time.sleep(1)  # 等待1秒
+        render_logs_section(workflow_manager)
             
