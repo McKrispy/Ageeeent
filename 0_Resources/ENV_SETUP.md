@@ -2,10 +2,10 @@
 
 ## 1. 创建.env文件
 
-复制 `env.example` 文件为 `.env`：
+复制 `.env.example` 文件为 `.env`：
 
 ```bash
-cp env.example .env
+cp .env.example .env
 ```
 
 ## 2. 编辑.env文件
@@ -68,11 +68,3 @@ google_interface = GoogleCloudInterface()
 - `.env` 文件已经被添加到 `.gitignore` 中，不会被提交到版本控制
 - 永远不要在代码中硬编码API密钥
 - 在生产环境中，建议使用更安全的环境变量管理方式
-
-## 7. 测试环境变量
-
-运行示例脚本检查环境变量是否正确设置：
-
-```bash
-python example_usage.py
-``` 
