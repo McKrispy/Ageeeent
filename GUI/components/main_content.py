@@ -202,6 +202,7 @@ def render_main_content():
                 st.success("🛑 工作流已停止")
                 st.rerun()
         
+        
         # 渲染问卷部分
         render_questionnaire_section(workflow_manager)
         
