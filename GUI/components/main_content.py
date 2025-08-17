@@ -3,7 +3,6 @@
 """
 import streamlit as st
 import time
-import json
 from GUI.utils.workflow import AsyncWorkflowManager
 
 def render_question(question_data: dict, question_index: int) -> str:
