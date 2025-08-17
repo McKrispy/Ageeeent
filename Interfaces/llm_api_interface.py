@@ -8,6 +8,7 @@ from abc import ABC, abstractmethod
 from openai import OpenAI
 import google.generativeai as genai
 from dotenv import load_dotenv
+from anthropic import Anthropic
 
 class LLMAPIInterface(ABC):
     """
@@ -81,6 +82,7 @@ class GoogleCloudInterface(LLMAPIInterface):
         """
         load_dotenv()
         api_key = os.getenv('GOOGLE_CLOUD_API_KEY')
+        base_url = os.getenv('GOOGLE_BASE_URL')
         if not api_key:
             raise ValueError("GOOGLE_CLOUD_API_KEY environment variable is required")
         genai.configure(api_key=api_key)
@@ -116,6 +118,36 @@ class GoogleCloudInterface(LLMAPIInterface):
             return response.text
         except Exception as e:
             print(f"An error occurred with Google AI API: {e}")
+            return ""
+
+class AnthropicInterface(LLMAPIInterface):
+    """
+    与 Anthropic API 交互的具体实现。
+    """
+    def __init__(self):
+        """
+        初始化Anthropic接口，从环境变量获取API密钥
+        """
+        load_dotenv()
+        api_key = os.getenv('ANTHROPIC_API_KEY')
+        if not api_key:
+            raise ValueError("ANTHROPIC_API_KEY environment variable is required")
+        base_url = os.getenv('ANTHROPIC_BASE_URL')
+        self.client = Anthropic(api_key=api_key, base_url=base_url)
+
+    def get_completion(self, prompt: str, model: str = "claude-3-5-sonnet-20240620", **kwargs) -> str:
+        """
+        使用 Anthropic API 获取文本补全。
+        """
+        try:
+            response = self.client.messages.create(
+                model=model,
+                messages=[{"role": "user", "content": prompt}],
+                **kwargs
+            )
+            return response.content[0].text
+        except Exception as e:
+            print(f"An error occurred with Anthropic API: {e}")
             return ""
 
 # ==============================================================================

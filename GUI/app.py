@@ -10,7 +10,6 @@ project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if project_root not in sys.path:
     sys.path.insert(0, project_root)
 
-from GUI.config.llm_config import LLMConfig
 from GUI.components.header import render_header
 from GUI.components.sidebar import render_sidebar
 from GUI.components.main_content import render_main_content
