@@ -18,6 +18,8 @@
     *   `def get_completion(self, prompt, model, **kwargs)`: 具体的 OpenAI API 调用。
 *   `class GoogleCloudInterface(LLMAPIInterface)`: `LLMAPIInterface` 的 Google Cloud 实现。
     *   `def get_completion(self, prompt, model, **kwargs)`: 具体的 Google Cloud API 调用。
+*   `class AnthropicInterface(LLMAPIInterface)`: `LLMAPIInterface` 的 Anthropic 实现。
+    *   `def get_completion(self, prompt, model, **kwargs)`: 具体的 Anthropic API 调用。
 
 ---
 
