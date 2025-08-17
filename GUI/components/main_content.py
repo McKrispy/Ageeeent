@@ -225,48 +225,29 @@ def render_main_content():
         # 显示最新日志
         logs = logger.get_all_logs()
         if logs:
-            # 只显示最近5个日志
-            recent_logs = logs[-5:] if len(logs) > 5 else logs
-            
-            st.subheader(f"📋 日志记录 (最近 {len(recent_logs)} 条，共 {len(logs)} 条)")
-            
+            st.subheader(f"📋 日志记录 (共 {len(logs)} 条)")
             # 使用 st.expander
             with st.expander("📋 查看日志详情", expanded=False):
-                # 在 expander 内显示最近5个日志
-                for i, log in enumerate(recent_logs):
-                    timestamp = time.strftime("%H:%M:%S", time.localtime(log["timestamp"]))
-                    phase = log.get("phase", "unknown")
-                    message = log['message']
-                    
-                    # 创建日志条目
-                    col_time, col_content = st.columns([1, 4])
-                    
-                    with col_time:
-                        st.caption(timestamp)
-                    
-                    with col_content:
-                        # 根据日志类型设置不同的样式
+                with st.container(height=500):
+                    for i, log in enumerate(logs):
+                        timestamp = time.strftime("%H:%M:%S", time.localtime(log["timestamp"]))
+                        phase = log.get("phase", "unknown")
+                        message = log['message']
+                        
+                        full_message = f"[{timestamp}] [{phase}] {message}"
+                        
                         if log["type"] == "success":
-                            st.success(f"[{phase}] {message}")
+                            st.success(full_message)
                         elif log["type"] == "error":
-                            st.error(f"[{phase}] {message}")
+                            st.error(full_message)
                         elif log["type"] == "warning":
-                            st.warning(f"[{phase}] {message}")
+                            st.warning(full_message)
                         else:
-                            st.info(f"[{phase}] {message}")
-                    
-                    # 添加分隔线（除了最后一条）
-                    if i < len(recent_logs) - 1:
-                        st.divider()
+                            st.info(full_message)
                 
                 # 显示日志统计信息
-                st.caption(f"显示最近 {len(recent_logs)} 条日志，共 {len(logs)} 条记录")
+                st.caption(f"共 {len(logs)} 条记录")
                 
-                # 如果有更多日志，显示查看全部选项
-                if len(logs) > 5:
-                    if st.button("📋 查看全部日志", use_container_width=True):
-                        # 这里可以添加展开显示全部日志的逻辑
-                        st.info("功能开发中：可以在这里展开显示全部日志")
         else:
             st.info("暂无日志")
         

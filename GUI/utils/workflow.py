@@ -6,11 +6,12 @@ import threading
 import time
 from typing import Optional, Callable
 from GUI.utils.logger import WorkflowLogger
+from GUI.utils.config import LLMConfig
 
 # 导入工作流所需的模块
 from Data.mcp_models import MCP, WorkingMemory, StrategyPlan, SubGoal, ExecutableCommand
 from Data.strategies import StrategyData
-from Interfaces.llm_api_interface import OpenAIInterface
+from Interfaces.llm_api_interface import OpenAIInterface, GoogleCloudInterface, AnthropicInterface
 from Interfaces.database_interface import RedisClient
 from Entities.strategy_planner import LLMStrategyPlanner
 from Entities.task_planner import LLMTaskPlanner
@@ -102,8 +103,16 @@ class AsyncWorkflowManager:
             # 1.1-1.2: 初始化接口
             if not self._check_stop_and_log("Initialization", "1.1-1.2: 初始化LLM接口和数据库接口..."):
                 return False
+
+            selected_provider = LLMConfig.get_general_config()['selected_provider']
             
-            self.llm_interface = OpenAIInterface()
+            if selected_provider == "OpenAI":
+                self.llm_interface = OpenAIInterface()
+            elif selected_provider == "Google":
+                self.llm_interface = GoogleCloudInterface()
+            elif selected_provider == "Anthropic":
+                self.llm_interface = AnthropicInterface()
+            
             self.db_interface = RedisClient()
             self.logger.add_log("Initialization", "✅ LLM接口和数据库接口初始化完成", "success")
             
