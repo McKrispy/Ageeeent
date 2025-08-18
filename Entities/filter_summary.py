@@ -21,20 +21,14 @@ class LLMFilterSummary(BaseLLMEntity):
         """
 
         print("LLMFilterSummary: Summarizing raw data into a lightweight summary.")
-        
         if not self.prompt_template or not raw_data:
             print("Warning: No prompt or raw data for summary.")
             return ""
-
-        # 限制输入长度，防止超出模型限制
         prompt = self.prompt_template.replace('{{raw_data}}', str(raw_data)[:8000])
-        
         summary = self.llm_interface.get_completion(prompt, model="gpt-3.5-turbo")
-        
         if summary:
-            print(f"Generated summary: {summary}")
+            print(f"LLMFilterSummary: Summary generated successfully.")
         else:
-            print("Error: LLMFilterSummary received no response.")
-            summary = "" #确保返回字符串
-        
+            print("LLMFilterSummary Error: No response.")
+            summary = ""
         return summary
