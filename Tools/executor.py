@@ -12,6 +12,7 @@ from .tool_registry import ToolRegistry
 
 from queue import Queue
 import threading
+import uuid
 
 class ToolExecutor:
     def __init__(self, db_interface: RedisClient, llm_summarizer: LLMFilterSummary):
@@ -46,7 +47,6 @@ class ToolExecutor:
         return True
     
     def _execute_batch(self, mcp: MCP, commands):
-        """执行一批命令"""
         threads = []
         results = {}
         results_lock = threading.Lock()
@@ -59,14 +59,12 @@ class ToolExecutor:
             threads.append(thread)
             thread.start()
         
-        # 等待所有线程完成
         for thread in threads:
             thread.join()
         
         return results
     
     def _execute_single_cmd_threaded(self, mcp: MCP, cmd, results, results_lock):
-        """在线程中执行单个命令"""
         try:
             tool_class = self.tool_registry.get_tool_class(cmd.tool)
             tool_instance = tool_class(self.db_interface, self.llm_summarizer)
@@ -97,7 +95,7 @@ if __name__ == "__main__":
         ))
 
     mcp = MCP(
-        session_id="test_session_002",
+        session_id=str(uuid.uuid4()),
         user_requirements="Test user requirements",
         executable_commands=cmd_list
     )

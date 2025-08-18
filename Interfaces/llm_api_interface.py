@@ -54,12 +54,13 @@ class OpenAIInterface(LLMAPIInterface):
 
         Args:
             prompt (str): 发送给 LLM 的提示。
-            model (str, optional): 指定要使用的模型。Defaults to "gpt-4".
+            model (str, optional): 指定要使用的模型。
             **kwargs: 其他API参数，例如 temperature, max_tokens。
 
         Returns:
             str: LLM 生成的文本响应。
         """
+        model = os.getenv('OPENAI_MODEL')
         try:
             response = self.client.chat.completions.create(
                 model=model,
@@ -88,7 +89,7 @@ class GoogleCloudInterface(LLMAPIInterface):
         genai.configure(api_key=api_key)
 
     
-    def get_completion(self, prompt: str, model: str = "gemini-pro", **kwargs) -> str:
+    def get_completion(self, prompt: str, model: str = "gemini-1.5-flash", **kwargs) -> str:
         """
         使用 Google AI API 获取文本补全。
 
@@ -101,6 +102,7 @@ class GoogleCloudInterface(LLMAPIInterface):
         Returns:
             str: LLM 生成的文本响应。
         """
+        model = os.getenv('GOOGLE_MODEL')
         try:
             model_instance = genai.GenerativeModel(model_name=model)
             
@@ -139,6 +141,7 @@ class AnthropicInterface(LLMAPIInterface):
         """
         使用 Anthropic API 获取文本补全。
         """
+        model = os.getenv('ANTHROPIC_MODEL')
         try:
             response = self.client.messages.create(
                 model=model,

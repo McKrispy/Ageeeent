@@ -204,14 +204,11 @@ def render_logs_section(workflow_manager):
             logger.clear_logs()
             
     with col_export:
-        if st.button("📥 导出日志", use_container_width=True):
-            logs_text = logger.export_logs("text")
-            st.download_button(
-                label="下载日志文件",
-                data=logs_text,
+        st.download_button(label="📥 导出日志",
+                data=logger.export_logs("text"),
                 file_name=f"workflow_logs_{int(time.time())}.txt",
-                mime="text/plain"
-            )
+                mime="text/plain",
+                use_container_width=True)
 
 def render_main_content():
     """渲染主内容区域 - 聊天界面"""

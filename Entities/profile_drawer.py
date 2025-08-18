@@ -19,21 +19,16 @@ class ProfileDrawer(BaseLLMEntity):
             print("Warning: No prompt or supplementary info for profile drawing.")
             return mcp
 
-        # 结合原始需求和补充信息来生成画像
         combined_input = f"Original requirement: {mcp.user_requirements}\n\nSupplementary information: {supplementary_info}"
-        
-        # 限制输入长度，防止超出模型限制
         prompt = self.prompt_template.replace('{{user_response}}', combined_input[:8000])
-        
-        profile_summary = self.llm_interface.get_completion(prompt, model="gpt-3.5-turbo")
-        
-        if profile_summary:
-            print(f"Generated Profile Summary: {profile_summary}")
-        else:
-            print("Error: ProfileDrawer received no response.")
-            profile_summary = "" #确保有默认值
+        profile_summary = self.llm_interface.get_completion(prompt)
 
-        # 更新MCP的completion_requirement
+        if profile_summary:
+            print(f"ProfileDrawer: Profile summary generated successfully.")
+        else:
+            print("ProfileDrawer Error: No response.")
+            profile_summary = ""
+
         mcp.completion_requirement = CompletionRequirement(
             original_input=mcp.user_requirements,
             supplementary_content=supplementary_info,
