@@ -214,6 +214,7 @@ class AsyncWorkflowManager:
             self.logger.add_log("Execution", f"执行命令结果: {self.working_memory.data}", "info")
             
             # ==================== 第9条：总结 ====================
+            self.logger.add_log("MCP", f"✅ 最终MCP: {self.mcp}", "info")
             self.logger.add_log("Summary", "✅ 工作流执行完成", "success")
             return True
             
