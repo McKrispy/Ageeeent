@@ -22,6 +22,8 @@ pydantic>=2.0.0
 typing-extensions>=4.0.0
 uuid>=1.30
 
+trafilatura
+
 # # Development & Testing (Optional)
 # pytest>=7.0.0
 # black>=23.0.0

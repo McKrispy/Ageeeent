@@ -5,6 +5,9 @@
 from Data.mcp_models import MCP, StrategyPlan
 from Data.strategies import StrategyData
 from Entities.base_llm_entity import BaseLLMEntity
+from Interfaces.llm_api_interface import OpenAIInterface
+from Interfaces.database_interface import RedisClient
+import json
 
 class LLMStrategyPlanner(BaseLLMEntity):
     """
@@ -23,15 +26,22 @@ class LLMStrategyPlanner(BaseLLMEntity):
 
         prompt = self.prompt_template.replace('{{user_requirements}}', prompt_input)
         
-        response = self.llm_interface.get_completion(prompt)
-        
+        response = self.llm_interface.get_completion(prompt, response_format={"type": "json_object"})
         if response:
-            plan_descriptions = [line.split('.', 1)[-1].strip() for line in response.strip().split('\n') if line.strip()]
+            strategy_plans = json.loads(response).get("strategy_plans", [])
+            mcp.strategy_plans = [StrategyPlan(description=plan) for plan in strategy_plans]
             
-            mcp.strategy_plans = [StrategyPlan(description=desc) for desc in plan_descriptions]
-            
-            print(f"Generated strategy plans: {[plan.description for plan in mcp.strategy_plans]}")
+            print(f"Generated strategy plans: {[plan for plan in mcp.strategy_plans]}")
         else:
             print("Error: LLMStrategyPlanner received no response.")
         
         return mcp
+
+if __name__ == "__main__":
+    llm_interface = OpenAIInterface()
+    llm_strategy_planner = LLMStrategyPlanner(llm_interface)
+    db = RedisClient()
+    mcp = MCP(session_id="1234567890", user_requirements="How to make a cake", strategy_plans=[])
+    strategies = StrategyData(execution_policy=["You are a helpful assistant that can help me make a cake."])
+    mcp = llm_strategy_planner.process(mcp, strategies)
+    print(mcp.strategy_plans)
