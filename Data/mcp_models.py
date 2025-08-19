@@ -16,7 +16,7 @@ class CompletionRequirement(BaseModel):
 
 class StrategyPlan(BaseModel):
     id: str = Field(default_factory=lambda: f"sp_{uuid.uuid4()}", description="战略计划的唯一ID。")
-    description: str = Field(description="战略计划的描述。")
+    description: dict[str, Any] = Field(description="战略计划的描述。")
     is_completed: bool = Field(default=False, description="标记该战略计划是否已完成。")
 
 class SubGoal(BaseModel):

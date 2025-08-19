@@ -5,12 +5,12 @@ import requests
 import json
 import time
 import random
+from trafilatura import fetch_url, extract
 from typing import Optional
-
 from Interfaces.llm_api_interface import OpenAIInterface
+from Interfaces.database_interface import RedisClient
 from Tools.utils.base_tool import BaseTool
 from Data.mcp_models import MCP, ExecutableCommand
-from Interfaces.database_interface import RedisClient
 from Entities.filter_summary import LLMFilterSummary
 
 class WebSearchTool(BaseTool):
@@ -28,18 +28,6 @@ class WebSearchTool(BaseTool):
             print("WebSearchTool: No database interface provided!")
         else:
             print(f"WebSearchTool: Database interface connected with host: {self.db_interface.host}, port: {self.db_interface.port}, db: {self.db_interface.db}")
-        
-        # 配置重试参数
-        self.max_retries = 3
-        self.retry_delay = 2
-        
-        # 轮换User-Agent列表
-        self.user_agents = [
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36",
-            "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/123.0.0.0 Safari/537.36"
-        ]
 
     def execute(self, mcp: MCP, executable_command: ExecutableCommand, **kwargs) -> dict:
         try:
@@ -82,7 +70,7 @@ class WebSearchTool(BaseTool):
                     if not url:
                         continue
                     
-                    content = self._fetch_url_with_retry(url)
+                    content = self._trafilatura_extract(url)
                     if content:
                         results.append({"url": url, "content": content})
                     else:
@@ -97,89 +85,21 @@ class WebSearchTool(BaseTool):
             traceback.print_exc()
             return []
 
-    def _fetch_url_with_retry(self, url: str) -> Optional[str]:
-        for attempt in range(self.max_retries):
-            try:
-                user_agent = random.choice(self.user_agents)
-                headers = {
-                    "User-Agent": user_agent,
-                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8",
-                    "Accept-Language": "en-US,en;q=0.5",
-                    "Accept-Encoding": "gzip, deflate",
-                    "Connection": "keep-alive",
-                    "Upgrade-Insecure-Requests": "1",
-                }
-                
-                print(f"WebSearchTool: Attempting to fetch {url} (attempt {attempt + 1}/{self.max_retries})")
-                
-                resp = requests.get(
-                    url,
-                    timeout=15,
-                    headers=headers,
-                    allow_redirects=True
-                )
-                
-                if resp.status_code == 200:
-                    soup = BeautifulSoup(resp.text, "html.parser")
-                    text_content = soup.get_text(separator=" ", strip=True)
-                    
-                    if text_content:
-                        text_parts = text_content.split()
-                        if text_parts:
-                            return " ".join(text_parts)
-                        else:
-                            return "No content extracted"
-                    else:
-                        return "No content extracted"
-                
-                elif resp.status_code in [404]:
-                    print(f"WebSearchTool: Got status {resp.status_code} for {url}, abandoning URL")
-                    return None
-                
-                elif resp.status_code in [403, 429, 500, 502, 503, 504]:
-                    print(f"WebSearchTool: Got status {resp.status_code} for {url}, will retry...")
-                    
-                    if attempt < self.max_retries - 1:
-                        delay = self.retry_delay + random.uniform(0, 2)
-                        print(f"WebSearchTool: Waiting {delay:.2f} seconds before retry...")
-                        time.sleep(delay)
-                        continue
-                    else:
-                        print(f"WebSearchTool: Failed to fetch {url} after {self.max_retries} attempts")
-                        return None 
-                
-                else:
-                    print(f"WebSearchTool: Got non-retryable status {resp.status_code} for {url}, abandoning URL")
-                    return None 
-                    
-            except requests.exceptions.Timeout:
-                print(f"WebSearchTool: Timeout error for {url} (attempt {attempt + 1})")
-                if attempt < self.max_retries - 1:
-                    delay = self.retry_delay + random.uniform(0, 1)
-                    time.sleep(delay)
-                    continue
-                else:
-                    print(f"WebSearchTool: Timeout error for {url} after all retries")
-                    return None 
-                    
-            except requests.exceptions.ConnectionError:
-                print(f"WebSearchTool: Connection error for {url} (attempt {attempt + 1})")
-                if attempt < self.max_retries - 1:
-                    delay = self.retry_delay + random.uniform(0, 1)
-                    time.sleep(delay)
-                    continue
-                else:
-                    print(f"WebSearchTool: Connection error for {url} after all retries")
-                    return None 
-                    
-            except Exception as e:
-                print(f"WebSearchTool: Unexpected error for {url}: {e}")
-                if attempt < self.max_retries - 1:
-                    delay = self.retry_delay + random.uniform(0, 1)
-                    time.sleep(delay)
-                    continue
-                else:
-                    print(f"WebSearchTool: Unexpected error for {url} after all retries")
-                    return None 
-        
-        return None
+    def _trafilatura_extract(self, url: str) -> Optional[str]:
+        try:
+            downloaded = fetch_url(url)
+            content = extract(downloaded)
+            print(content)
+            return content
+        except Exception as e:
+            print(f"WebSearchTool trafilatura extract error: {e}")
+            return None
+
+if __name__ == "__main__":
+    url = "https://www.sohu.com/a/924444987_121991261"
+    db_interface = RedisClient()
+    llm_api_interface = OpenAIInterface()
+    llm_summarizer = LLMFilterSummary(llm_api_interface)
+    tool = WebSearchTool(db_interface, llm_summarizer)
+    content = tool._trafilatura_extract(url)
+    print(content)
