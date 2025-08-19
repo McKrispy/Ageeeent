@@ -28,10 +28,46 @@ class LLMStrategyPlanner(BaseLLMEntity):
         
         response = self.llm_interface.get_completion(prompt, response_format={"type": "json_object"})
         if response:
-            strategy_plans = json.loads(response).get("strategy_plans", [])
-            mcp.strategy_plans = [StrategyPlan(description=plan) for plan in strategy_plans]
+            response_data = json.loads(response)
+            task_type = response_data.get("task_type", "未知任务类型")
+            task_complexity = response_data.get("task_complexity", "中等")
+            strategy_plans = response_data.get("strategy_plans", [])
             
-            print(f"Generated strategy plans: {[plan for plan in mcp.strategy_plans]}")
+            print(f"Identified task type: {task_type}, complexity: {task_complexity}")
+            
+            # 处理新的strategy_plans格式
+            for plan in strategy_plans:
+                if isinstance(plan, dict):
+                    # 新格式：包含objective, scope, priority, rationale
+                    plan_dict = {
+                        "task_type": task_type,
+                        "task_complexity": task_complexity,
+                        "objective": plan.get("objective", ""),
+                        "scope": plan.get("scope", ""),
+                        "priority": plan.get("priority", "中"),
+                        "rationale": plan.get("rationale", ""),
+                        "type": "strategic_plan"
+                    }
+                elif isinstance(plan, str):
+                    # 如果是字符串，转换为dict格式
+                    plan_dict = {
+                        "task_type": task_type,
+                        "task_complexity": task_complexity,
+                        "description": plan, 
+                        "type": "strategic_plan"
+                    }
+                else:
+                    # 其他情况，转换为字符串再包装为dict
+                    plan_dict = {
+                        "task_type": task_type,
+                        "task_complexity": task_complexity,
+                        "description": str(plan), 
+                        "type": "strategic_plan"
+                    }
+                
+                mcp.strategy_plans.append(StrategyPlan(description=plan_dict))
+            
+            print(f"Generated {len(mcp.strategy_plans)} strategy plans for {task_type} task")
         else:
             print("Error: LLMStrategyPlanner received no response.")
         

@@ -60,7 +60,11 @@ class OpenAIInterface(LLMAPIInterface):
         Returns:
             str: LLM 生成的文本响应。
         """
-        model = os.getenv('OPENAI_MODEL')
+        # 优先使用环境变量中的模型，如果没有则使用传入的默认值
+        env_model = os.getenv('OPENAI_MODEL')
+        if env_model:
+            model = env_model
+        
         try:
             response = self.client.chat.completions.create(
                 model=model,
@@ -102,7 +106,11 @@ class GoogleCloudInterface(LLMAPIInterface):
         Returns:
             str: LLM 生成的文本响应。
         """
-        model = os.getenv('GOOGLE_MODEL')
+        # 优先使用环境变量中的模型，如果没有则使用传入的默认值
+        env_model = os.getenv('GOOGLE_MODEL')
+        if env_model:
+            model = env_model
+            
         try:
             model_instance = genai.GenerativeModel(model_name=model)
             
@@ -141,7 +149,11 @@ class AnthropicInterface(LLMAPIInterface):
         """
         使用 Anthropic API 获取文本补全。
         """
-        model = os.getenv('ANTHROPIC_MODEL')
+        # 优先使用环境变量中的模型，如果没有则使用传入的默认值
+        env_model = os.getenv('ANTHROPIC_MODEL')
+        if env_model:
+            model = env_model
+            
         try:
             response = self.client.messages.create(
                 model=model,
