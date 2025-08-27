@@ -122,6 +122,98 @@ def render_questionnaire_section(workflow_manager):
         st.info("当前无需填写问卷")
 
 @st.fragment(run_every="1s")
+def render_mcp_section(workflow_manager):
+    """渲染MCP与工作记忆(WorkingMemory)模块，实时刷新"""
+    st.markdown("---")
+    st.subheader("🧠 MCP 概览")
+
+    status = workflow_manager.get_status()
+    results = status.get("results", {})
+    mcp = results.get("mcp")
+    working_memory = results.get("working_memory")
+
+    if not mcp:
+        st.info("暂无 MCP 数据（请先启动工作流）")
+        return
+
+    # 顶部关键信息
+    col_a, col_b, col_c, col_d = st.columns(4)
+    with col_a:
+        st.metric("会话ID", getattr(mcp, "session_id", "-")[:12] + "…" if getattr(mcp, "session_id", "") else "-")
+    with col_b:
+        st.metric("循环计数", getattr(mcp, "global_cycle_count", 0))
+    with col_c:
+        st.metric("战略计划", len(getattr(mcp, "strategy_plans", []) or []))
+    with col_d:
+        st.metric("执行命令", len(getattr(mcp, "executable_commands", []) or []))
+
+    # 原始需求与完成需求
+    with st.expander("📥 用户需求与完成要求", expanded=True):
+        st.markdown("**原始需求**")
+        st.write(getattr(mcp, "user_requirements", "-"))
+
+        comp_req = getattr(mcp, "completion_requirement", None)
+        if comp_req:
+            st.markdown("---")
+            st.markdown("**完成要求 CompletionRequirement**")
+            st.markdown(f"- 原始输入: {getattr(comp_req, 'original_input', '-')}")
+            st.markdown(f"- 补充内容: {getattr(comp_req, 'supplementary_content', '-')}")
+            st.markdown(f"- 画像分析: {getattr(comp_req, 'profile_analysis', '-')}")
+        else:
+            st.caption("尚未生成完成要求")
+
+    # 战略计划列表
+    with st.expander("🧭 战略计划 StrategyPlans", expanded=False):
+        plans = getattr(mcp, "strategy_plans", []) or []
+        if not plans:
+            st.caption("暂无战略计划")
+        else:
+            for idx, sp in enumerate(plans, start=1):
+                with st.container(border=True):
+                    st.markdown(f"**[{idx}] ID:** {getattr(sp, 'id', '-')}")
+                    st.markdown(f"- 已完成: {getattr(sp, 'is_completed', False)}")
+                    desc = getattr(sp, "description", {}) or {}
+                    st.markdown("- 描述:")
+                    st.json(desc)
+
+    # 子目标列表
+    with st.expander("🎯 子目标 SubGoals", expanded=False):
+        sub_goals = getattr(mcp, "sub_goals", []) or []
+        if not sub_goals:
+            st.caption("暂无子目标")
+        else:
+            for idx, sg in enumerate(sub_goals, start=1):
+                with st.container(border=True):
+                    st.markdown(f"**[{idx}] ID:** {getattr(sg, 'id', '-')}")
+                    st.markdown(f"- 父计划: {getattr(sg, 'parent_strategy_plan_id', '-')}")
+                    st.markdown(f"- 描述: {getattr(sg, 'description', '-')}")
+                    st.markdown(f"- 已完成: {getattr(sg, 'is_completed', False)}")
+
+    # 可执行命令
+    with st.expander("🛠️ 可执行命令 ExecutableCommands", expanded=False):
+        commands = getattr(mcp, "executable_commands", []) or []
+        if not commands:
+            st.caption("暂无可执行命令")
+        else:
+            for idx, ec in enumerate(commands, start=1):
+                with st.container(border=True):
+                    st.markdown(f"**[{idx}] ID:** {getattr(ec, 'id', '-')}")
+                    st.markdown(f"- 父子目标: {getattr(ec, 'parent_sub_goal_id', '-')}")
+                    st.markdown(f"- 工具: {getattr(ec, 'tool', '-')}")
+                    st.markdown(f"- 已完成: {getattr(ec, 'is_completed', False)}")
+                    st.markdown("- 参数:")
+                    st.json(getattr(ec, "params", {}) or {})
+
+    # WorkingMemory
+    st.markdown("---")
+    st.subheader("🗂️ 工作记忆 WorkingMemory")
+    if not working_memory or not getattr(working_memory, "data", None):
+        st.caption("暂无工作记忆数据")
+    else:
+        with st.expander("查看工作记忆内容", expanded=False):
+            st.json(getattr(working_memory, "data", {}) or {})
+
+@st.fragment(run_every="1s")
 def render_workflow_status(workflow_manager):
     """渲染工作流状态"""
     st.markdown("---")
@@ -266,6 +358,9 @@ def render_main_content():
         
         # 渲染工作流状态
         render_workflow_status(workflow_manager)
+        
+        # 渲染 MCP 模块
+        render_mcp_section(workflow_manager)
     
     with col2:
         render_logs_section(workflow_manager)
