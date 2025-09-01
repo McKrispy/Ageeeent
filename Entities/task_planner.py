@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-任务规划器 (How) - 进行精细的战术规划。
+Task Planner (How) - Performs detailed tactical planning.
 """
 import json
 import time
@@ -14,7 +14,7 @@ from Tools.tool_registry import ToolRegistry
 
 class LLMTaskPlanner(BaseLLMEntity):
     """
-    任务规划器 (How) - 进行精细的战术规划。
+    Task Planner (How) - Performs detailed tactical planning.
     """
     def __init__(self, llm_interface, db_interface=None, entity_id=None):
         super().__init__(llm_interface, db_interface, entity_id)
@@ -23,7 +23,7 @@ class LLMTaskPlanner(BaseLLMEntity):
 
     def process(self, mcp: MCP, strategies: StrategyData) -> MCP:
         """
-        批量处理所有战略计划，为每个计划生成子目标和命令，并填充到扁平化的列表中。
+        Batch process all strategy plans, generate subgoals and commands for each plan, and populate into flattened lists.
         """
 
         if not mcp.strategy_plans:
@@ -32,13 +32,13 @@ class LLMTaskPlanner(BaseLLMEntity):
 
         print("LLMTaskPlanner: Breaking down strategy plans into specific subgoals and commands.")
         
-        # 获取工具注册表信息
+        # Get tool registry information
         available_tools = self._get_available_tools_info()
         
-        # 构建批量处理的prompt
+        # Build batch processing prompt
         batch_prompt = self._build_batch_prompt(mcp.strategy_plans, strategies, available_tools)
         
-        # 批量调用LLM
+        # Batch call LLM
         response = self._call_llm_with_retry(batch_prompt)
         
         if response:
@@ -50,22 +50,22 @@ class LLMTaskPlanner(BaseLLMEntity):
 
     def _get_available_tools_info(self) -> str:
         """
-        获取可用工具的信息字符串
+        Get information string for available tools
         """
         tools = self.tool_registry.list_tools()
         tools_info = []
         
         for tool_name in tools:
-            tools_info.append(f"- {tool_name}: 网络搜索和信息获取工具")
+            tools_info.append(f"- {tool_name}: Web search and information retrieval tool")
         
         return "\n".join(tools_info)
     
     def _format_strategy_plan(self, plan: StrategyPlan) -> str:
         """
-        将StrategyPlan的dict格式description转换为字符串
+        Convert StrategyPlan's dict format description to string
         """
         if isinstance(plan.description, dict):
-            # 将dict转换为可读的字符串格式
+            # Convert dict to readable string format
             formatted_parts = []
             for key, value in plan.description.items():
                 formatted_parts.append(f"{key}: {value}")
@@ -75,55 +75,55 @@ class LLMTaskPlanner(BaseLLMEntity):
     
     def _build_batch_prompt(self, strategy_plans: List[StrategyPlan], strategies: StrategyData, tools_info: str) -> str:
         """
-        构建批量处理的prompt
+        Build batch processing prompt
         """
-        # 将短期战术经验融入 prompt
-        policy_prompt = "\n".join(strategies.execution_policy) if strategies.execution_policy else "暂无执行策略经验"
+        # Integrate short-term tactical experience into prompt
+        policy_prompt = "\n".join(strategies.execution_policy) if strategies.execution_policy else "No execution policy experience"
         
         # 格式化所有战略计划
         formatted_plans = []
         for i, plan in enumerate(strategy_plans, 1):
             plan_desc = self._format_strategy_plan(plan)
-            formatted_plans.append(f"战略计划{i} (ID: {plan.id}):\n{plan_desc}")
+            formatted_plans.append(f"Strategy plan{i} (ID: {plan.id}):\n{plan_desc}")
         
         strategic_steps = "\n\n".join(formatted_plans)
         
-        # 替换prompt模板中的占位符
+        # Replace placeholder in prompt template
         prompt = self.prompt_template.replace('{{strategic_step}}', strategic_steps)
         prompt = prompt.replace('{{execution_policy_info}}', policy_prompt)
         
-        # 添加工具信息
-        tools_section = f"\n\n**当前可用工具：**\n{tools_info}"
+        # Add tool information
+        tools_section = f"\n\n**Current available tools:**\n{tools_info}"
         prompt = prompt + tools_section
         
         return prompt
     
     def _call_llm_with_retry(self, prompt: str) -> str:
         """
-        带重试机制的LLM调用
+        LLM call with retry mechanism
         """
         for attempt in range(self.max_retries):
             try:
-                print(f"LLM调用尝试 {attempt + 1}/{self.max_retries}")
+                print(f"LLM call attempt {attempt + 1}/{self.max_retries}")
                 
                 response = self.llm_interface.get_completion(
                     prompt,
                     response_format={"type": "json_object"},
-                    temperature=0.3,  # 降低随机性，提高一致性
-                    max_tokens=4000   # 设置合理的token限制
+                    temperature=0.3,
+                    max_tokens=4000 
                 )
                 
                 if response and response.strip():
                     return response
                 else:
-                    print(f"尝试 {attempt + 1}: 收到空响应")
+                    print(f"Attempt {attempt + 1}: Received empty response")
                     
             except Exception as e:
-                print(f"尝试 {attempt + 1} 失败: {e}")
+                print(f"Attempt {attempt + 1} failed: {e}")
                 
             if attempt < self.max_retries - 1:
-                wait_time = 2 ** attempt  # 指数退避
-                print(f"等待 {wait_time} 秒后重试...")
+                wait_time = 2 ** attempt  # Exponential backoff
+                print(f"Waiting {wait_time} seconds before retrying...")
                 time.sleep(wait_time)
         
         return None
@@ -150,11 +150,9 @@ class LLMTaskPlanner(BaseLLMEntity):
                 )
                 mcp.sub_goals.append(new_sub_goal)
                 
-                # 每个子目标下应该有对应的可执行命令
                 for cmd_data in sg_data.get("executable_commands", []):
                     tool_name = cmd_data.get("tool")
                     
-                    # 验证工具是否在注册表中
                     if tool_name in self.tool_registry.list_tools():
                         new_command = ExecutableCommand(
                             parent_sub_goal_id=new_sub_goal.id,
@@ -163,15 +161,15 @@ class LLMTaskPlanner(BaseLLMEntity):
                         )
                         mcp.executable_commands.append(new_command)
                     else:
-                        print(f"Warning: 工具 '{tool_name}' 不在注册表中，跳过此命令")
+                        print(f"Warning:'{tool_name}' is not in the registry, skipping this command")
                 
-            print(f"批量生成了 {len(mcp.sub_goals)} 个子目标和 {len(mcp.executable_commands)} 个可执行命令")
+            print(f"Batch generated {len(mcp.sub_goals)} subgoals and {len(mcp.executable_commands)} executable commands")
 
         except json.JSONDecodeError as e:
-            print(f"Error: JSON解析失败: {e}")
-            print(f"原始响应: {response[:500]}...")  # 只显示前500字符
+            print(f"Error: JSON parsing failed: {e}")
+            print(f"Original response: {response[:500]}...") 
         except Exception as e:
-            print(f"Error: 处理响应时发生错误: {e}")
+            print(f"Error: Error processing response: {e}")
 
 if __name__ == "__main__":
     llm_interface = OpenAIInterface()

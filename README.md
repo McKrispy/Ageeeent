@@ -1,81 +1,80 @@
-# 项目架构开发文档
+# Project Architecture Development Documentation
 
-本文档概述了项目中所有核心类的结构，包括它们的继承关系和方法，以便于开发人员快速理解代码架构并进行协作。
+This document outlines the structure of all core classes in the project, including their inheritance relationships and methods, to help developers quickly understand the code architecture and collaborate effectively.
 
 ---
 
 ### `Data/mcp_models.py`
-*   `class ExecutionLogEntry(pydantic.BaseModel)`: 用于记录执行历史中的单个条目。
-*   `class MCP(pydantic.BaseModel)`: 贯穿任务全程的核心数据对象（任务简报）。
-    *   `class Config`: Pydantic 内部配置类。
+*   `class ExecutionLogEntry(pydantic.BaseModel)`: Used to record individual entries in execution history.
+*   `class MCP(pydantic.BaseModel)`: Core data object that runs through the entire task (task brief).
+    *   `class Config`: Pydantic internal configuration class.
 
 ---
 
 ### `Interfaces/llm_api_interface.py`
-*   `class LLMAPIInterface(abc.ABC)`: LLM API 的抽象基类。
-    *   `@abstractmethod def get_completion(self, prompt, model, **kwargs)`: 获取 LLM 文本补全的抽象方法。
-*   `class OpenAIInterface(LLMAPIInterface)`: `LLMAPIInterface` 的 OpenAI 实现。
-    *   `def get_completion(self, prompt, model, **kwargs)`: 具体的 OpenAI API 调用。
-*   `class GoogleCloudInterface(LLMAPIInterface)`: `LLMAPIInterface` 的 Google Cloud 实现。
-    *   `def get_completion(self, prompt, model, **kwargs)`: 具体的 Google Cloud API 调用。
-*   `class AnthropicInterface(LLMAPIInterface)`: `LLMAPIInterface` 的 Anthropic 实现。
-    *   `def get_completion(self, prompt, model, **kwargs)`: 具体的 Anthropic API 调用。
+*   `class LLMAPIInterface(abc.ABC)`: Abstract base class for LLM API.
+    *   `@abstractmethod def get_completion(self, prompt, model, **kwargs)`: Abstract method for obtaining LLM text completion.
+*   `class OpenAIInterface(LLMAPIInterface)`: OpenAI implementation of `LLMAPIInterface`.
+    *   `def get_completion(self, prompt, model, **kwargs)`: Specific OpenAI API call.
+*   `class GoogleCloudInterface(LLMAPIInterface)`: Google Cloud implementation of `LLMAPIInterface`.
+    *   `def get_completion(self, prompt, model, **kwargs)`: Specific Google Cloud API call.
+*   `class AnthropicInterface(LLMAPIInterface)`: Anthropic implementation of `LLMAPIInterface`.
+    *   `def get_completion(self, prompt, model, **kwargs)`: Specific Anthropic API call.
 
 ---
 
 ### `Interfaces/database_interface.py`
-*   `class DatabaseInterface(abc.ABC)`: 数据库交互的抽象基类。
-    *   `@abstractmethod def connect(self)`: 建立连接。
-    *   `@abstractmethod def disconnect(self)`: 断开连接。
-    *   `@abstractmethod def store_data(self, key, data)`: 存储数据。
-    *   `@abstractmethod def retrieve_data(self, key)`: 检索数据。
-*   `class RedisJSONInterface(DatabaseInterface)`: `DatabaseInterface` 的 RedisJSON 实现。
-    *   `def connect(self)`: 连接到 Redis。
-    *   `def disconnect(self)`: 从 Redis 断开。
-    *   `def store_data(self, key, data)`: 将数据存入 RedisJSON。
-    *   `def retrieve_data(self, key)`: 从 RedisJSON 检索数据。
+*   `class DatabaseInterface(abc.ABC)`: Abstract base class for database interaction.
+    *   `@abstractmethod def connect(self)`: Establish connection.
+    *   `@abstractmethod def disconnect(self)`: Disconnect.
+    *   `@abstractmethod def store_data(self, key, data)`: Store data.
+    *   `@abstractmethod def retrieve_data(self, key)`: Retrieve data.
+*   `class RedisJSONInterface(DatabaseInterface)`: RedisJSON implementation of `DatabaseInterface`.
+    *   `def connect(self)`: Connect to Redis.
+    *   `def disconnect(self)`: Disconnect from Redis.
+    *   `def store_data(self, key, data)`: Store data in RedisJSON.
+    *   `def retrieve_data(self, key)`: Retrieve data from RedisJSON.
 
 ---
 
 ### `Entities/llm_entities.py`
-*   `class BaseLLMEntity(abc.ABC)`: 所有 LLM 实体的基类。
-    *   `def __init__(self, llm_interface)`: 初始化方法。
-    *   `@abstractmethod def process(self, mcp)`: 处理 MCP 对象的抽象方法。
-*   `class LLMStrategyPlanner(BaseLLMEntity)`: 战略规划器。
-    *   `def process(self, mcp)`: 生成宏观战略计划。
-*   `class LLMTaskPlanner(BaseLLMEntity)`: 任务规划器。
-    *   `def process(self, mcp)`: 生成具体的子目标和命令。
-*   `class LLMFilterSummary(BaseLLMEntity)`: 筛选与摘要器。
-    *   `def process_data(self, raw_data)`: 将原始数据处理为摘要。
+*   `class BaseLLMEntity(abc.ABC)`: Base class for all LLM entities.
+    *   `def __init__(self, llm_interface)`: Initialization method.
+    *   `@abstractmethod def process(self, mcp)`: Abstract method for processing MCP objects.
+*   `class LLMStrategyPlanner(BaseLLMEntity)`: Strategy planner.
+    *   `def process(self, mcp)`: Generate macro strategic plans.
+*   `class LLMTaskPlanner(BaseLLMEntity)`: Task planner.
+    *   `def process(self, mcp)`: Generate specific subgoals and commands.
+*   `class LLMFilterSummary(BaseLLMEntity)`: Filter and summarizer.
+    *   `def process_data(self, raw_data)`: Process raw data into summaries.
 
 ---
 
 ### `Entities/verification_entities.py`
-*   `class BaseVerificationEntity(abc.ABC)`: 所有验证实体的基类。
-    *   `@abstractmethod def verify(self, mcp)`: 执行验证的抽象方法。
-*   `class PredictionVerification(BaseVerificationEntity)`: 战术层面的预测验证器。
-    *   `def verify(self, mcp)`: 验证上一步执行结果是否符合预期。
-*   `class RequirementsVerification(BaseVerificationEntity)`: 战略层面的需求验证器。
-    *   `def verify(self, mcp)`: 验证最终结果是否满足用户初始需求。
+*   `class BaseVerificationEntity(abc.ABC)`: Base class for all verification entities.
+    *   `@abstractmethod def verify(self, mcp)`: Abstract method for executing verification.
+*   `class PredictionVerification(BaseVerificationEntity)`: Tactical-level prediction verifier.
+    *   `def verify(self, mcp)`: Verify whether the execution results of the previous step meet expectations.
+*   `class RequirementsVerification(BaseVerificationEntity)`: Strategic-level requirements verifier.
+    *   `def verify(self, mcp)`: Verify whether the final results meet the user's initial requirements.
 
 ---
 
 ### `Tools/available_tools.py`
-*   `class BaseTool(abc.ABC)`: 所有工具的抽象基类。
-    *   `@abstractmethod def execute(self, **kwargs)`: 执行工具逻辑的抽象方法。
-*   `class WebSearchTool(BaseTool)`: 网页搜索工具。
-    *   `def execute(self, query, **kwargs)`: 执行搜索。
-*   `class StructuredDataAPITool(BaseTool)`: 结构化数据 API 工具。
-    *   `def execute(self, endpoint, params, **kwargs)`: 调用 API。
-*   `class ToolRegistry`: 用于管理和查找所有可用工具。
-    *   `def __init__(self)`: 初始化并注册所有工具。
-    *   `def get_tool(self, name)`: 根据名称获取工具实例。
-    *   `def list_tools(self)`: 返回所有可用工具的名称。
+*   `class BaseTool(abc.ABC)`: Abstract base class for all tools.
+    *   `@abstractmethod def execute(self, **kwargs)`: Abstract method for executing tool logic.
+*   `class WebSearchTool(BaseTool)`: Web search tool.
+    *   `def execute(self, query, **kwargs)`: Execute search.
+*   `class StructuredDataAPITool(BaseTool)`: Structured data API tool.
+    *   `def execute(self, endpoint, params, **kwargs)`: Call API.
+*   `class ToolRegistry`: Used to manage and find all available tools.
+    *   `def __init__(self)`: Initialize and register all tools.
+    *   `def get_tool(self, name)`: Get tool instance by name.
+    *   `def list_tools(self)`: Return names of all available tools.
 
 ---
 
 ### `Tools/executor.py`
-*   `class Executor`: 执行器，负责调用工具和协调数据流。
-    *   `def __init__(self, db_interface, summarizer)`: 初始化执行器。
-    *   `def execute_command(self, mcp)`: 执行 MCP 中定义的命令。
-
+*   `class Executor`: Executor, responsible for calling tools and coordinating data flow.
+    *   `def __init__(self, db_interface, summarizer)`: Initialize executor.
+    *   `def execute_command(self, mcp)`: Execute commands defined in MCP.

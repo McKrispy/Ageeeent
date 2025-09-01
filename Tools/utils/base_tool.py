@@ -8,8 +8,8 @@ from Data.mcp_models import MCP, WorkingMemory, ExecutableCommand
 
 class BaseTool(ABC):
     """
-    所有工具的抽象基类。
-    现在，它要求在实例化时传入一个 RedisClient 实例和一个 LLMFilterSummary 实例。
+    Abstract base class for all tools.
+    Now it requires passing a RedisClient instance and an LLMFilterSummary instance during instantiation.
     """
     def __init__(self, db_interface: RedisClient, llm_summarizer: LLMFilterSummary):
         if not isinstance(db_interface, RedisClient):
@@ -25,15 +25,15 @@ class BaseTool(ABC):
     @abstractmethod
     def execute(self, mcp: MCP, executable_command: ExecutableCommand, **kwargs) -> dict:
         """
-        执行工具的具体逻辑。
-        子类必须实现此方法。
-        该方法现在需要接收一个 MCP 对象，并返回一个包含执行结果的字典。
-        返回的字典应至少包含 'summary' 和 'data_key'。
+        Execute the specific logic of the tool.
+        Subclasses must implement this method.
+        This method now needs to receive an MCP object and return a dictionary containing execution results.
+        The returned dictionary should contain at least 'summary' and 'data_key'.
         """
         pass
 
     def get_instance_id(self) -> str:
         """
-        返回此工具实例的唯一ID。
+        Return the unique ID of this tool instance.
         """
         return self.instance_id

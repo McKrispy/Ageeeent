@@ -7,10 +7,10 @@ class ProfileDrawer(BaseLLMEntity):
 
     def process(self, mcp: MCP, supplementary_info: str, *args, **kwargs) -> MCP:
         """
-        根据用户原始输入和补充信息生成用户画像，并更新MCP。
-        :param mcp: MCP对象，包含用户原始需求。
-        :param supplementary_info: 用户对问题的补充回答。
-        :return: 更新后的MCP对象。
+        Generate user profile based on user's original input and supplementary information, and update MCP.
+        :param mcp: MCP object containing user's original requirements.
+        :param supplementary_info: User's supplementary answers to questions.
+        :return: Updated MCP object.
         """
 
         print("ProfileDrawer: Analyzing user profile based on supplementary info.")

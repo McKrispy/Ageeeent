@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-此文件定义了 Executor (执行器) 类。
-执行器是连接规划和行动的桥梁，负责调用工具、协调数据流，
-并严格遵守"原始数据存入RedisJSON，摘要存入MCP"的核心原则。
+This file defines the Executor class.
+The executor is the bridge connecting planning and action, responsible for calling tools, coordinating data flow,
+and strictly adhering to the core principle of "raw data stored in RedisJSON, summaries stored in MCP".
 """
 from Data.mcp_models import MCP, WorkingMemory, ExecutableCommand
 from Interfaces.database_interface import RedisClient

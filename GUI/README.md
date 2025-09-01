@@ -1,66 +1,66 @@
-# GUI 目录说明
+# GUI Directory Description
 
-## 启动方式
+## Startup Method
 
 ```bash
 cd GUI
 streamlit run app.py
 ```
 
-或直接在根目录下运行run.py
+Or run run.py directly from the root directory
 
-## 功能说明
+## Function Description
 
-### 当前实现
-- ✅ 基础聊天界面框架
-- ✅ 左侧聊天窗口
-- ✅ 右侧后台日志
-- ✅ 组件化结构
-- ✅ LLM配置管理
-- ✅ 响应式布局
-- ✅ 实际的聊天对话
-- ✅ 消息发送和接收
-- ✅ 聊天历史记录
-- ✅ 日志记录功能
+### Currently Implemented
+- ✅ Basic chat interface framework
+- ✅ Left chat window
+- ✅ Right background logs
+- ✅ Component structure
+- ✅ LLM configuration management
+- ✅ Responsive layout
+- ✅ Actual chat conversation
+- ✅ Message sending and receiving
+- ✅ Chat history records
+- ✅ Logging functionality
 
-### 待实现功能
-- ❌ 完整的工作流记录
-- ❌ 实时policy状态
-- ❌ web_search的url引用
+### Pending Implementation
+- ❌ Complete workflow records
+- ❌ Real-time policy status
+- ❌ web_search URL references
 
-## 页面布局
+## Page Layout
 
-### 左侧 - 聊天窗口
-- 聊天记录显示区域
-- 消息输入框
-- 发送和清空按钮
+### Left Side - Chat Window
+- Chat record display area
+- Message input box
+- Send and clear buttons
 
-### 右侧 - 后台日志
-- 系统日志显示
-- 日志刷新和导出功能
+### Right Side - Background Logs
+- System log display
+- Log refresh and export functionality
 
-### 顶部 - 状态信息
-- 机器人状态
-- 执行轮次
-- 单次响应时间
-- 总响应时间
+### Top - Status Information
+- Bot status
+- Execution cycles
+- Single response time
+- Total response time
 
-### 侧边栏 - 配置选项
-- AI模型选择
-- 模型参数配置
-- 聊天设置
-- 操作按钮
+### Sidebar - Configuration Options
+- AI model selection
+- Model parameter configuration
+- Chat settings
+- Action buttons
 
-## 技术栈
+## Technology Stack
 
-- **前端框架**: Streamlit
-- **配置管理**: python-dotenv
-- **布局**: 响应式网格布局
-- **组件**: 模块化组件设计
+- **Frontend Framework**: Streamlit
+- **Configuration Management**: python-dotenv
+- **Layout**: Responsive grid layout
+- **Components**: Modular component design
 
 
-## 注意事项
+## Notes
 
-- 确保已安装 `streamlit` 和 `python-dotenv`
-- 环境变量配置在项目根目录的 `.env` 文件中
-- 组件之间通过 `st.session_state` 共享状态
+- Ensure `streamlit` and `python-dotenv` are installed
+- Environment variable configuration is in the `.env` file in the project root directory
+- Components share state through `st.session_state`

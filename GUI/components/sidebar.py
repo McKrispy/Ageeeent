@@ -1,5 +1,5 @@
 """
-侧边栏组件 - 聊天机器人配置
+Sidebar component - Chatbot configuration
 """
 import streamlit as st
 from utils.config import LLMConfig, DBConfig
@@ -16,20 +16,20 @@ def render_sidebar():
     anthropic_model_list = ["claude-3-5-sonnet-20240620", "claude-3-5-sonnet-20240620-v1", "claude-3-5-sonnet-20240620-v2", "claude-3-5-sonnet-20240620-v3"]
 
     provider_list = ["OpenAI", "Google", "Anthropic"]
-    """渲染侧边栏 - 聊天机器人配置"""
+    """Render sidebar - Chatbot configuration"""
     with st.sidebar:
-        st.header("⚙️ 机器人配置")
+        st.header("⚙️ Bot Configuration")
         
-        # LLM模型选择
-        st.subheader("🤖 AI模型")
+        # LLM model selection
+        st.subheader("🤖 AI Model")
         selected_provider = st.selectbox(
-            "选择AI提供商",
+            "Select AI Provider",
             provider_list,
             index=provider_list.index(general_config['selected_provider'])
         )
         
-        # 模型参数配置
-        st.subheader("🔧 模型参数")
+        # Model parameter configuration
+        st.subheader("🔧 Model Parameters")
         openai_model = st.selectbox("OpenAI Model", openai_model_list, index = openai_model_list.index(openai_config['model']))
         google_model = st.selectbox("Google Model", google_model_list, index = google_model_list.index(google_config['model']))
         anthropic_model = st.selectbox("Anthropic Model", anthropic_model_list, index = anthropic_model_list.index(anthropic_config['model']))
@@ -41,19 +41,19 @@ def render_sidebar():
         temperature = st.slider("Temperature", 0.0, 1.0, float(general_config['temperature']), 0.1)
         max_tokens = st.slider("Max Tokens", 100, 8000, int(general_config['max_tokens']), 100)
         
-        # 操作按钮
-        st.subheader("🔄 操作")
-        if st.button("保存配置"):
+        # Action buttons
+        st.subheader("🔄 Actions")
+        if st.button("Save Configuration"):
             LLMConfig.update_general_config(selected_provider=selected_provider)
             LLMConfig.update_openai_config(model=openai_model, base_url=openai_base_url)
             LLMConfig.update_google_config(model=google_model, base_url=google_base_url)
             LLMConfig.update_anthropic_config(model=anthropic_model, base_url=anthropic_base_url)
             LLMConfig.update_general_config(temperature=temperature, max_tokens=max_tokens)
-            st.success("配置已保存")
+            st.success("Configuration saved")
         
-        if st.button("清空聊天记录"):
-            st.info("清空功能待实现")
+        if st.button("Clear Chat History"):
+            st.info("Clear function pending implementation")
         
-        # 底部信息
+        # Footer information
         st.markdown("---")
-        st.markdown("**版本**: v1.0.0")
+        st.markdown("**Version**: v1.0.0")
