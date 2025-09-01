@@ -1,12 +1,12 @@
 """
-主内容区域组件 - 聊天界面
+Main content area component - Chat interface
 """
 import streamlit as st
 import time
 from GUI.utils.workflow import AsyncWorkflowManager
 
 def render_question(question_data: dict, question_index: int) -> str:
-    """渲染单个问题并返回用户答案"""
+    """Render a single question and return user answer"""
     st.markdown(f"**{question_index + 1}. {question_data['question']}**")
     
     question_type = question_data.get('type', 'text')
@@ -15,34 +15,34 @@ def render_question(question_data: dict, question_index: int) -> str:
         options = question_data.get('options', [])
         if options:
             answer = st.radio(
-                "选择答案:",
+                "Select answer:",
                 options,
                 key=f"q_{question_index}",
                 label_visibility="collapsed"
             )
             return answer
         else:
-            st.warning("该问题缺少选项")
+            st.warning("This question is missing options")
             return ""
     
     elif question_type == 'multiple_choice':
         options = question_data.get('options', [])
         if options:
             answer = st.multiselect(
-                "选择答案（可多选）:",
+                "Select answers (multiple choice):",
                 options,
                 key=f"q_{question_index}",
                 label_visibility="collapsed"
             )
             return ", ".join(answer) if answer else ""
         else:
-            st.warning("该问题缺少选项")
+            st.warning("This question is missing options")
             return ""
     
     elif question_type == 'text':
-        placeholder = question_data.get('placeholder', '请在此输入您的答案...')
+        placeholder = question_data.get('placeholder', 'Please enter your answer here...')
         answer = st.text_area(
-            "您的答案:",
+            "Your answer:",
             placeholder=placeholder,
             height=100,
             key=f"q_{question_index}",
@@ -51,33 +51,33 @@ def render_question(question_data: dict, question_index: int) -> str:
         return answer
     
     else:
-        st.warning(f"不支持的问题类型: {question_type}")
+        st.warning(f"Unsupported question type: {question_type}")
         return ""
 
 @st.fragment(run_every="1s")
 def render_questionnaire_section(workflow_manager):
-    """渲染问卷部分"""
+    """Render questionnaire section"""
     st.markdown("---")
-    st.subheader("问题补充")
+    st.subheader("Questionnaire")
     
-    # 检查是否正在等待问卷
+    # Check if waiting for questionnaire
     if workflow_manager._manage_questionnaire_interaction("check"):
         questionnaire_data = workflow_manager._manage_questionnaire_interaction("get")
         
         if questionnaire_data:
             try:
-                # 显示问卷标题和描述
-                st.markdown(f"## {questionnaire_data.get('title', '问题补充问卷')}")
-                st.markdown(questionnaire_data.get('description', '请根据以下问题提供补充信息：'))
+                # Display questionnaire title and description
+                st.markdown(f"## {questionnaire_data.get('title', 'Questionnaire')}")
+                st.markdown(questionnaire_data.get('description', 'Please provide additional information based on the following questions:'))
                 
-                # 创建问卷表单
+                # Create questionnaire form
                 with st.form("questionnaire_form"):
-                    st.markdown("**请回答以下问题：**")
+                    st.markdown("**Please answer the following questions:**")
                     
-                    # 存储用户答案
+                    # Store user answers
                     user_answers = {}
                     
-                    # 渲染每个问题
+                    # Render each question
                     questions = questionnaire_data.get('questions', [])
                     for i, question in enumerate(questions):
                         st.markdown("---")
@@ -88,44 +88,44 @@ def render_questionnaire_section(workflow_manager):
                             "type": question.get('type', 'text')
                         }
                     
-                    # 提交按钮
-                    submitted = st.form_submit_button("📤 提交问卷答案", use_container_width=True, type="primary")
+                    # Submit button
+                    submitted = st.form_submit_button("📤 Submit Questionnaire", use_container_width=True, type="primary")
                     
                     if submitted:
-                        # 验证所有问题都已回答
+                        # Validate all questions are answered
                         unanswered_questions = []
                         for q_key, q_data in user_answers.items():
                             if not q_data['answer'].strip():
                                 unanswered_questions.append(q_data['question'])
                         
                         if unanswered_questions:
-                            st.error(f"以下问题尚未回答：\n" + "\n".join([f"• {q}" for q in unanswered_questions]))
+                            st.error(f"The following questions are not answered:\n" + "\n".join([f"• {q}" for q in unanswered_questions]))
                         else:
-                            # 构建补充信息
-                            supplementary_info = "用户问卷回答：\n\n"
+                            # Build supplementary information
+                            supplementary_info = "User questionnaire responses:\n\n"
                             for q_key, q_data in user_answers.items():
                                 supplementary_info += f"**{q_data['question']}**\n{q_data['answer']}\n\n"
                             
-                            # 提交到工作流
+                            # Submit to workflow
                             result = workflow_manager._manage_questionnaire_interaction("submit", supplementary_info)
                             if result == "success":
-                                st.success("✅ 问卷答案已提交！工作流将继续执行...")
+                                st.success("✅ Questionnaire submitted! Workflow will continue...")
                                 st.rerun()
                             else:
-                                st.error("❌ 提交失败，请重试")
+                                st.error("❌ Submission failed, please try again")
             
             except Exception as e:
-                st.error(f"渲染问卷时出错: {e}")
-                st.json(questionnaire_data)  # 显示原始数据用于调试
+                st.error(f"Error rendering questionnaire: {e}")
+                st.json(questionnaire_data)  # Display raw data for debugging
     
     else:
-        st.info("当前无需填写问卷")
+        st.info("No questionnaire to fill out currently")
 
 @st.fragment(run_every="1s")
 def render_mcp_section(workflow_manager):
-    """渲染MCP与工作记忆(WorkingMemory)模块，实时刷新"""
+    """Render MCP and WorkingMemory module with real-time refresh"""
     st.markdown("---")
-    st.subheader("🧠 MCP 概览")
+    st.subheader("🧠 MCP Overview")
 
     status = workflow_manager.get_status()
     results = status.get("results", {})
@@ -133,137 +133,137 @@ def render_mcp_section(workflow_manager):
     working_memory = results.get("working_memory")
 
     if not mcp:
-        st.info("暂无 MCP 数据（请先启动工作流）")
+        st.info("No MCP data available (please start workflow first)")
         return
 
-    # 顶部关键信息
+    # Top key information
     col_a, col_b, col_c, col_d = st.columns(4)
     with col_a:
-        st.metric("会话ID", getattr(mcp, "session_id", "-")[:12] + "…" if getattr(mcp, "session_id", "") else "-")
+        st.metric("Session ID", getattr(mcp, "session_id", "-")[:12] + "…" if getattr(mcp, "session_id", "") else "-")
     with col_b:
-        st.metric("循环计数", getattr(mcp, "global_cycle_count", 0))
+        st.metric("Cycle Count", getattr(mcp, "global_cycle_count", 0))
     with col_c:
-        st.metric("战略计划", len(getattr(mcp, "strategy_plans", []) or []))
+        st.metric("Strategy Plans", len(getattr(mcp, "strategy_plans", []) or []))
     with col_d:
-        st.metric("执行命令", len(getattr(mcp, "executable_commands", []) or []))
+        st.metric("Executable Commands", len(getattr(mcp, "executable_commands", []) or []))
 
-    # 原始需求与完成需求
-    with st.expander("📥 用户需求与完成要求", expanded=True):
-        st.markdown("**原始需求**")
+    # Original requirements and completion requirements
+    with st.expander("📥 User Requirements & Completion Requirements", expanded=True):
+        st.markdown("**Original Requirements**")
         st.write(getattr(mcp, "user_requirements", "-"))
 
         comp_req = getattr(mcp, "completion_requirement", None)
         if comp_req:
             st.markdown("---")
-            st.markdown("**完成要求 CompletionRequirement**")
-            st.markdown(f"- 原始输入: {getattr(comp_req, 'original_input', '-')}")
-            st.markdown(f"- 补充内容: {getattr(comp_req, 'supplementary_content', '-')}")
-            st.markdown(f"- 画像分析: {getattr(comp_req, 'profile_analysis', '-')}")
+            st.markdown("**Completion Requirements**")
+            st.markdown(f"- Original Input: {getattr(comp_req, 'original_input', '-')}")
+            st.markdown(f"- Supplementary Content: {getattr(comp_req, 'supplementary_content', '-')}")
+            st.markdown(f"- Profile Analysis: {getattr(comp_req, 'profile_analysis', '-')}")
         else:
-            st.caption("尚未生成完成要求")
+            st.caption("Completion requirements not generated yet")
 
-    # 战略计划列表
-    with st.expander("🧭 战略计划 StrategyPlans", expanded=False):
+    # Strategy plans list
+    with st.expander("🧭 Strategy Plans", expanded=False):
         plans = getattr(mcp, "strategy_plans", []) or []
         if not plans:
-            st.caption("暂无战略计划")
+            st.caption("No strategy plans available")
         else:
             for idx, sp in enumerate(plans, start=1):
                 with st.container(border=True):
                     st.markdown(f"**[{idx}] ID:** {getattr(sp, 'id', '-')}")
-                    st.markdown(f"- 已完成: {getattr(sp, 'is_completed', False)}")
+                    st.markdown(f"- Completed: {getattr(sp, 'is_completed', False)}")
                     desc = getattr(sp, "description", {}) or {}
-                    st.markdown("- 描述:")
+                    st.markdown("- Description:")
                     st.json(desc)
 
-    # 子目标列表
-    with st.expander("🎯 子目标 SubGoals", expanded=False):
+    # Sub-goals list
+    with st.expander("🎯 Sub Goals", expanded=False):
         sub_goals = getattr(mcp, "sub_goals", []) or []
         if not sub_goals:
-            st.caption("暂无子目标")
+            st.caption("No sub-goals available")
         else:
             for idx, sg in enumerate(sub_goals, start=1):
                 with st.container(border=True):
                     st.markdown(f"**[{idx}] ID:** {getattr(sg, 'id', '-')}")
-                    st.markdown(f"- 父计划: {getattr(sg, 'parent_strategy_plan_id', '-')}")
-                    st.markdown(f"- 描述: {getattr(sg, 'description', '-')}")
-                    st.markdown(f"- 已完成: {getattr(sg, 'is_completed', False)}")
+                    st.markdown(f"- Parent Plan: {getattr(sg, 'parent_strategy_plan_id', '-')}")
+                    st.markdown(f"- Description: {getattr(sg, 'description', '-')}")
+                    st.markdown(f"- Completed: {getattr(sg, 'is_completed', False)}")
 
-    # 可执行命令
-    with st.expander("🛠️ 可执行命令 ExecutableCommands", expanded=False):
+    # Executable commands
+    with st.expander("🛠️ Executable Commands", expanded=False):
         commands = getattr(mcp, "executable_commands", []) or []
         if not commands:
-            st.caption("暂无可执行命令")
+            st.caption("No executable commands available")
         else:
             for idx, ec in enumerate(commands, start=1):
                 with st.container(border=True):
                     st.markdown(f"**[{idx}] ID:** {getattr(ec, 'id', '-')}")
-                    st.markdown(f"- 父子目标: {getattr(ec, 'parent_sub_goal_id', '-')}")
-                    st.markdown(f"- 工具: {getattr(ec, 'tool', '-')}")
-                    st.markdown(f"- 已完成: {getattr(ec, 'is_completed', False)}")
-                    st.markdown("- 参数:")
+                    st.markdown(f"- Parent Sub-goal: {getattr(ec, 'parent_sub_goal_id', '-')}")
+                    st.markdown(f"- Tool: {getattr(ec, 'tool', '-')}")
+                    st.markdown(f"- Completed: {getattr(ec, 'is_completed', False)}")
+                    st.markdown("- Parameters:")
                     st.json(getattr(ec, "params", {}) or {})
 
     # WorkingMemory
     st.markdown("---")
-    st.subheader("🗂️ 工作记忆 WorkingMemory")
+    st.subheader("🗂️ Working Memory")
     if not working_memory or not getattr(working_memory, "data", None):
-        st.caption("暂无工作记忆数据")
+        st.caption("No working memory data available")
     else:
-        with st.expander("查看工作记忆内容", expanded=False):
+        with st.expander("View Working Memory Content", expanded=False):
             st.json(getattr(working_memory, "data", {}) or {})
 
 @st.fragment(run_every="1s")
 def render_workflow_status(workflow_manager):
-    """渲染工作流状态"""
+    """Render workflow status"""
     st.markdown("---")
-    st.subheader("⚙️ 工作流状态")
+    st.subheader("⚙️ Workflow Status")
     
     workflow_status = workflow_manager.get_status()
     
-    # 显示详细状态
+    # Display detailed status
     col1, col2, col3 = st.columns(3)
     
     with col1:
         status_color = "🟢" if workflow_status["is_running"] else "🔴"
-        st.metric("运行状态", f"{status_color} {'运行中' if workflow_status['is_running'] else '已停止'}")
+        st.metric("Running Status", f"{status_color} {'Running' if workflow_status['is_running'] else 'Stopped'}")
     
     with col2:
         if workflow_status["is_running"]:
             if workflow_manager._manage_questionnaire_interaction("check"):
-                st.metric("当前阶段", "⏳ 等待问卷")
+                st.metric("Current Phase", "⏳ Waiting for Questionnaire")
             else:
-                st.metric("当前阶段", "🟢 执行中")
+                st.metric("Current Phase", "🟢 Executing")
         else:
-            st.metric("当前阶段", "⏸️ 未启动")
+            st.metric("Current Phase", "⏸️ Not Started")
     
     with col3:
         results = workflow_status.get("results", {})
         total_items = results.get("strategy_plans", 0) + results.get("sub_goals", 0) + results.get("executable_commands", 0)
-        st.metric("生成项目", total_items)
+        st.metric("Generated Items", total_items)
 
 @st.fragment(run_every="1s")
 def render_logs_section(workflow_manager):
-    """渲染日志部分"""
+    """Render logs section"""
     st.markdown("---")
-    st.subheader("📋 后台日志")
-    # 获取工作流状态
+    st.subheader("📋 Background Logs")
+    # Get workflow status
     workflow_status = workflow_manager.get_status()
     logger = workflow_status["logger"]
     
-    # 显示工作流状态
+    # Display workflow status
     status_color = "🟢" if workflow_status["is_running"] else "🔴"
-    st.metric("状态", f"{status_color} {'运行中' if workflow_status['is_running'] else '已停止'}")
+    st.metric("Status", f"{status_color} {'Running' if workflow_status['is_running'] else 'Stopped'}")
     
     summary = logger.get_summary()
-    st.metric("日志数量", summary["total_logs"])
+    st.metric("Log Count", summary["total_logs"])
     
-    # 显示最新日志
+    # Display latest logs
     logs = logger.get_all_logs()
     if logs:
-        st.subheader(f"📋 日志记录 (共 {len(logs)} 条)")
-        # 使用 st.expander
-        with st.expander("📋 查看日志详情", expanded=False):
+        st.subheader(f"📋 Log Records (Total: {len(logs)})")
+        # Use st.expander
+        with st.expander("📋 View Log Details", expanded=False):
             with st.container(height=500):
                 for log in logs:
                     timestamp = time.strftime("%H:%M:%S", time.localtime(log["timestamp"]))
@@ -281,85 +281,85 @@ def render_logs_section(workflow_manager):
                     else:
                         st.info(full_message)
             
-            # 显示日志统计信息
-            st.caption(f"共 {len(logs)} 条记录")
+            # Display log statistics
+            st.caption(f"Total: {len(logs)} records")
             
     else:
-        st.info("暂无日志")
+        st.info("No logs available")
     
-    # 日志控制
+    # Log controls
     st.markdown("---")
     col_clear, col_export = st.columns(2)
     
     with col_clear:
-        if st.button("🔄 清空日志", use_container_width=True):
+        if st.button("🔄 Clear Logs", use_container_width=True):
             logger.clear_logs()
             
     with col_export:
-        st.download_button(label="📥 导出日志",
+        st.download_button(label="📥 Export Logs",
                 data=logger.export_logs("text"),
                 file_name=f"workflow_logs_{int(time.time())}.txt",
                 mime="text/plain",
                 use_container_width=True)
 
 def render_main_content():
-    """渲染主内容区域 - 聊天界面"""
+    """Render main content area - Chat interface"""
     
-    # 初始化会话状态
+    # Initialize session state
     if "workflow_manager" not in st.session_state:
         st.session_state.workflow_manager = AsyncWorkflowManager()
     
     workflow_manager = st.session_state.workflow_manager
     
-    # 创建两列布局：左侧聊天窗口，右侧日志
+    # Create two-column layout: left chat window, right logs
     col1, col2 = st.columns([2, 1])
     
     with col1:
-        st.header("💬 聊天窗口")
+        st.header("💬 Chat Window")
         
-        # 聊天记录显示区域
+        # Chat record display area
         chat_container = st.container()
         with chat_container:
             if workflow_manager.is_workflow_running():
                 if workflow_manager._manage_questionnaire_interaction("check"):
-                    st.info("🤔 系统正在等待您完成问题补充...")
+                    st.info("🤔 System is waiting for you to complete the questionnaire...")
                 else:
-                    st.info("🔄 工作流正在执行中...")
+                    st.info("🔄 Workflow is executing...")
             else:
-                st.info("请输入您的需求，系统将为您生成相应的分析计划")
+                st.info("Please enter your requirements, the system will generate corresponding analysis plans")
         
-        # 聊天输入区域
+        # Chat input area
         st.markdown("---")
-        user_input = st.text_input("请输入您的消息...", placeholder="例如：帮我分析2024年人工智能在医疗领域的最新发展趋势...")
+        user_input = st.text_input("Please enter your message...", placeholder="For example: Help me analyze the latest development trends of artificial intelligence in the medical field in 2024...")
         
-        # 发送按钮
+        # Send buttons
         col_send1, col_send2 = st.columns([3, 1])
         with col_send1:
-            if st.button("🚀 启动工作流", use_container_width=True, type="primary"):
+            if st.button("🚀 Start Workflow", use_container_width=True, type="primary"):
                 if user_input.strip():
-                    # 启动工作流
+                    # Start workflow
                     if workflow_manager.start_workflow(user_input):
-                        st.success("✅ 工作流已启动！")
+                        st.success("✅ Workflow started!")
                         st.rerun()
                     else:
-                        st.warning("⚠️ 工作流已在运行中")
+                        st.warning("⚠️ Workflow is already running")
                 else:
-                    st.warning("⚠️ 请输入消息内容")
+                    st.warning("⚠️ Please enter message content")
         
         with col_send2:
-            if st.button("⏹️ 停止", use_container_width=True):
+            if st.button("⏹️ Stop", use_container_width=True):
                 workflow_manager.stop_workflow()
-                st.success("🛑 工作流已停止")
+                st.success("🛑 Workflow stopped")
                 st.rerun()
         
         
-        # 渲染问卷部分
+        # Render questionnaire section
         render_questionnaire_section(workflow_manager)
         
-        # 渲染工作流状态
+        # Render workflow status
         render_workflow_status(workflow_manager)
         
-        # 渲染 MCP 模块
+        # Render MCP module
         render_mcp_section(workflow_manager)
     
     with col2:

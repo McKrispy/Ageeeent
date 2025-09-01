@@ -4,19 +4,19 @@ from Tools.utils.base_tool import BaseTool
 
 def get_tools():
     """
-    返回一个包含所有可用工具及其元数据的字典。
-    Key是工具的唯一编号 (Tool-ID)。
+    Returns a dictionary containing all available tools and their metadata.
+    Key is the unique identifier of the tool (Tool-ID).
     """
     return {
         "T001": {"class": WebSearchTool, "name": "web_search"},
-        # 未来可以添加更多工具, e.g.
+        # More tools can be added in the future, e.g.
         # "T002": {"class": CodeInterpreterTool, "name": "code_interpreter"},
     }
 
 class ToolRegistry:
     """
-    一个简单的注册表，用于管理和查找所有可用的工具。
-    它现在返回工具的类，而不是实例。
+    A simple registry for managing and finding all available tools.
+    It now returns tool classes instead of instances.
     """
     def __init__(self):
         self._tools_map = get_tools()
@@ -24,17 +24,17 @@ class ToolRegistry:
 
     def get_tool_class(self, name: str) -> type[BaseTool]:
         """
-        根据名称获取工具的类。
-        Executor将负责实例化这个类。
+        Get tool class by name.
+        Executor will be responsible for instantiating this class.
 
         Args:
-            name (str): 工具的名称。
+            name (str): Name of the tool.
 
         Returns:
-            type[BaseTool]: 工具的类定义。
+            type[BaseTool]: Tool class definition.
         
         Raises:
-            ValueError: 如果找不到指定的工具。
+            ValueError: If the specified tool is not found.
         """
         tool_class = self._tools_by_name.get(name)
         if not tool_class:
@@ -42,5 +42,5 @@ class ToolRegistry:
         return tool_class
 
     def list_tools(self) -> list:
-        """返回所有可用工具的名称列表。"""
+        """Return a list of names of all available tools."""
         return list(self._tools_by_name.keys())

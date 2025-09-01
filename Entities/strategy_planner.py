@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-战略规划器 (What) - 进行高层次战略分解。
+Strategy Planner (What) - Performs high-level strategic decomposition.
 """
 from Data.mcp_models import MCP, StrategyPlan
 from Data.strategies import StrategyData
@@ -11,16 +11,16 @@ import json
 
 class LLMStrategyPlanner(BaseLLMEntity):
     """
-    战略规划器 (What) - 进行高层次战略分解。
+    Strategy Planner (What) - Performs high-level strategic decomposition.
     """
     def process(self, mcp: MCP, strategies: StrategyData) -> MCP:
         """
-        读取用户需求和长期战略记忆，生成宏观战略计划并更新到 MCP.strategy_plans。
+        Read user requirements and long-term strategic memory, generate macro strategic plans and update to MCP.strategy_plans.
         """
 
         print("LLMStrategyPlanner: Decomposing user requirements into a high-level strategy.")
         
-        # 将长期战略记忆融入 prompt
+        # Integrate long-term strategic memory into prompt
         cognition_prompt = "\n".join(strategies.cognition)
         prompt_input = f"User Request: {mcp.user_requirements}\n\nRelevant Strategic Memories:\n{cognition_prompt}"
 
@@ -29,27 +29,27 @@ class LLMStrategyPlanner(BaseLLMEntity):
         response = self.llm_interface.get_completion(prompt, response_format={"type": "json_object"})
         if response:
             response_data = json.loads(response)
-            task_type = response_data.get("task_type", "未知任务类型")
-            task_complexity = response_data.get("task_complexity", "中等")
+            task_type = response_data.get("task_type", "Unknown task type")
+            task_complexity = response_data.get("task_complexity", "Medium")
             strategy_plans = response_data.get("strategy_plans", [])
             
             print(f"Identified task type: {task_type}, complexity: {task_complexity}")
             
-            # 处理新的strategy_plans格式
+            # Process new strategy_plans format
             for plan in strategy_plans:
                 if isinstance(plan, dict):
-                    # 新格式：包含objective, scope, priority, rationale
+                    # New format: contains objective, scope, priority, rationale
                     plan_dict = {
                         "task_type": task_type,
                         "task_complexity": task_complexity,
                         "objective": plan.get("objective", ""),
                         "scope": plan.get("scope", ""),
-                        "priority": plan.get("priority", "中"),
+                        "priority": plan.get("priority", "Medium"),
                         "rationale": plan.get("rationale", ""),
                         "type": "strategic_plan"
                     }
                 elif isinstance(plan, str):
-                    # 如果是字符串，转换为dict格式
+                    # If it's a string, convert to dict format
                     plan_dict = {
                         "task_type": task_type,
                         "task_complexity": task_complexity,
@@ -57,7 +57,7 @@ class LLMStrategyPlanner(BaseLLMEntity):
                         "type": "strategic_plan"
                     }
                 else:
-                    # 其他情况，转换为字符串再包装为dict
+                    # Other cases, convert to string then wrap as dict
                     plan_dict = {
                         "task_type": task_type,
                         "task_complexity": task_complexity,

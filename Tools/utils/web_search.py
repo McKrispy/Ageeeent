@@ -15,13 +15,13 @@ from Entities.filter_summary import LLMFilterSummary
 
 class WebSearchTool(BaseTool):
     """
-    WebSearchTool 负责执行网络搜索、提取内容、存储原始数据，并调用摘要器。
+    WebSearchTool is responsible for executing web searches, extracting content, storing raw data, and calling the summarizer.
     """
     def __init__(self, db_interface: RedisClient, llm_summarizer: LLMFilterSummary):
         """
-        初始化 WebSearchTool。
-        :param db_interface: RedisClient 的实例，用于与数据库交互。
-        :param llm_summarizer: LLMFilterSummary 的实例，用于生成摘要。
+        Initialize WebSearchTool.
+        :param db_interface: Instance of RedisClient for database interaction.
+        :param llm_summarizer: Instance of LLMFilterSummary for generating summaries.
         """
         super().__init__(db_interface, llm_summarizer)
         if not self.db_interface:

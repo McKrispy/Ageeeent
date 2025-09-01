@@ -1,5 +1,5 @@
 """
-异步工作流管理器 - 支持实时控制和状态管理
+Asynchronous workflow manager - supports real-time control and state management
 """
 import asyncio
 import threading
@@ -8,7 +8,6 @@ from typing import Optional, Callable
 from GUI.utils.logger import WorkflowLogger
 from GUI.utils.config import LLMConfig
 
-# 导入工作流所需的模块
 from Data.mcp_models import MCP, WorkingMemory, StrategyPlan, SubGoal, ExecutableCommand
 from Data.strategies import StrategyData
 from Interfaces.llm_api_interface import OpenAIInterface, GoogleCloudInterface, AnthropicInterface
@@ -22,7 +21,6 @@ from Tools.executor import ToolExecutor
 from Tools.tool_registry import ToolRegistry
 
 class AsyncWorkflowManager:
-    """工作流管理器"""
     
     def __init__(self):
         self.workflow_task: Optional[asyncio.Task] = None

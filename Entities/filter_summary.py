@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-筛选与摘要器 - 将“重型”原始数据转化为轻量级的、高信息密度的摘要。
+Filter and Summarizer - Converts "heavy" raw data into lightweight, high information density summaries.
 """
 from Data.mcp_models import MCP
 from Entities.base_llm_entity import BaseLLMEntity
@@ -10,14 +10,14 @@ from Interfaces.database_interface import RedisClient
 
 class LLMFilterSummary(BaseLLMEntity):
     """
-    筛选与摘要器 - 将“重型”原始数据转化为轻量级的、高信息密度的摘要。
+    Filter and Summarizer - Converts "heavy" raw data into lightweight, high information density summaries.
     """
     def process(self, mcp: MCP, raw_data: str) -> str:
         """
-        处理原始数据，生成摘要。
-        :param mcp: MCP对象，用于状态更新。
-        :param raw_data: 来自工具的原始数据字符串。
-        :return: 返回生成的摘要字符串。
+        Process raw data and generate summary.
+        :param mcp: MCP object for status updates.
+        :param raw_data: Raw data string from tools.
+        :return: Returns the generated summary string.
         """
 
         print("LLMFilterSummary: Summarizing raw data into a lightweight summary.")
