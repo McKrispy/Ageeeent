@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-此文件定义了所有 LLM 实体的抽象基类。
+This file defines the abstract base class for all LLM entities.
 """
 import os
 from abc import ABC, abstractmethod
@@ -13,15 +13,14 @@ from Interfaces.database_interface import DatabaseInterface
 
 class BaseLLMEntity(ABC):
     """
-    所有 LLM 实体的抽象基类。
-    它处理与 LLM 接口的通信和 Prompt 的加载，并管理自身状态。
+    Abstract base class for all LLM entities.
+    It handles communication with LLM interfaces and prompt loading, and manages its own state.
     """
     def __init__(self, llm_interface: LLMAPIInterface, db_interface: DatabaseInterface = None, entity_id: str = None):
         self.llm_interface = llm_interface
         self.db_interface = db_interface
         self.prompt_template = self._load_prompt()
         
-        # 为每个实体实例分配一个唯一ID
         self.entity_id = entity_id or f"{self.__class__.__name__}_{uuid.uuid4()}"
 
 
